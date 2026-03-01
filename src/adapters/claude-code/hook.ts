@@ -3,16 +3,24 @@ import { CLAUDE_SETTINGS_PATH } from '../../shared/constants.js'
 import type { HookStatus } from '../adapter.interface.js'
 
 const HOOK_COMMAND = 'aireport log-session --cli claude-code'
+const STARTUP_HOOK_COMMAND = 'aireport startup-check'
+
+interface HookEntry {
+  matcher?: string
+  hooks: Array<{ type: string; command: string; timeout?: number }>
+}
 
 interface ClaudeSettings {
   hooks?: {
-    SessionEnd?: Array<{
-      matcher: string
-      hooks: Array<{ type: string; command: string }>
-    }>
+    SessionEnd?: HookEntry[]
+    SessionStart?: HookEntry[]
     [key: string]: unknown
   }
   [key: string]: unknown
+}
+
+function hasCommand(entries: HookEntry[] | undefined, command: string): boolean {
+  return entries?.some((entry) => entry.hooks?.some((h) => h.command === command)) || false
 }
 
 export async function installHook(): Promise<void> {
@@ -22,42 +30,58 @@ export async function installHook(): Promise<void> {
     settings.hooks = {}
   }
 
+  let changed = false
+
+  // Install SessionEnd hook for session logging
   if (!settings.hooks.SessionEnd) {
     settings.hooks.SessionEnd = []
   }
+  if (!hasCommand(settings.hooks.SessionEnd, HOOK_COMMAND)) {
+    settings.hooks.SessionEnd.push({
+      matcher: '*',
+      hooks: [{ type: 'command', command: HOOK_COMMAND }],
+    })
+    changed = true
+  }
 
-  // Check if already installed
-  const exists = settings.hooks.SessionEnd.some((entry) =>
-    entry.hooks?.some((h) => h.command === HOOK_COMMAND)
-  )
+  // Install SessionStart hook for startup context
+  if (!settings.hooks.SessionStart) {
+    settings.hooks.SessionStart = []
+  }
+  if (!hasCommand(settings.hooks.SessionStart, STARTUP_HOOK_COMMAND)) {
+    settings.hooks.SessionStart.push({
+      matcher: '*',
+      hooks: [{ type: 'command', command: STARTUP_HOOK_COMMAND }],
+    })
+    changed = true
+  }
 
-  if (exists) return
-
-  settings.hooks.SessionEnd.push({
-    matcher: '*',
-    hooks: [
-      {
-        type: 'command',
-        command: HOOK_COMMAND,
-      },
-    ],
-  })
-
-  writeSettings(settings)
+  if (changed) {
+    writeSettings(settings)
+  }
 }
 
 export async function uninstallHook(): Promise<void> {
   if (!existsSync(CLAUDE_SETTINGS_PATH)) return
 
   const settings = readSettings()
-  if (!settings.hooks?.SessionEnd) return
 
-  settings.hooks.SessionEnd = settings.hooks.SessionEnd.filter(
-    (entry) => !entry.hooks?.some((h) => h.command === HOOK_COMMAND)
-  )
+  if (settings.hooks?.SessionEnd) {
+    settings.hooks.SessionEnd = settings.hooks.SessionEnd.filter(
+      (entry) => !entry.hooks?.some((h) => h.command === HOOK_COMMAND)
+    )
+    if (settings.hooks.SessionEnd.length === 0) {
+      delete settings.hooks.SessionEnd
+    }
+  }
 
-  if (settings.hooks.SessionEnd.length === 0) {
-    delete settings.hooks.SessionEnd
+  if (settings.hooks?.SessionStart) {
+    settings.hooks.SessionStart = settings.hooks.SessionStart.filter(
+      (entry) => !entry.hooks?.some((h) => h.command === STARTUP_HOOK_COMMAND)
+    )
+    if (settings.hooks.SessionStart.length === 0) {
+      delete settings.hooks.SessionStart
+    }
   }
 
   writeSettings(settings)
@@ -65,15 +89,18 @@ export async function uninstallHook(): Promise<void> {
 
 export async function checkHookStatus(): Promise<HookStatus> {
   if (!existsSync(CLAUDE_SETTINGS_PATH)) {
-    return { installed: false, hookType: 'SessionEnd', configPath: CLAUDE_SETTINGS_PATH }
+    return { installed: false, hookType: 'SessionEnd+SessionStart', configPath: CLAUDE_SETTINGS_PATH }
   }
 
   const settings = readSettings()
-  const installed = settings.hooks?.SessionEnd?.some((entry) =>
-    entry.hooks?.some((h) => h.command === HOOK_COMMAND)
-  ) || false
+  const sessionEndInstalled = hasCommand(settings.hooks?.SessionEnd, HOOK_COMMAND)
+  const startupInstalled = hasCommand(settings.hooks?.SessionStart, STARTUP_HOOK_COMMAND)
 
-  return { installed, hookType: 'SessionEnd', configPath: CLAUDE_SETTINGS_PATH }
+  return {
+    installed: sessionEndInstalled && startupInstalled,
+    hookType: 'SessionEnd+SessionStart',
+    configPath: CLAUDE_SETTINGS_PATH,
+  }
 }
 
 function readSettings(): ClaudeSettings {

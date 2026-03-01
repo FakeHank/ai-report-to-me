@@ -134,6 +134,27 @@ export interface DailyAggregation {
   previousDayHighlights?: string
 }
 
+export interface SessionSemanticSlice {
+  sessionId: string
+  project: string
+  date: string
+  userQueries: string[]
+  aiResponses: string[]
+  directionChanges: string[]
+  outcome: 'completed' | 'partial' | 'abandoned'
+}
+
+export interface SemanticSummary {
+  sessionSlices: SessionSemanticSlice[]
+  errorSamples: {
+    totalErrors: number
+    resolvedCount: number
+    topUnresolved: { error: string; file?: string; sessionId: string }[]
+    topResolved: { error: string; resolution: string; sessionId: string }[]
+  }
+  debuggingStruggles: { file: string; errorCount: number; sessionIds: string[]; resolved: boolean }[]
+}
+
 export interface WrappedAggregation {
   days: number
   startDate: string

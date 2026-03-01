@@ -1,10 +1,11 @@
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { readMarkdown } from '../shared/storage.js'
+import { readMarkdown, parseReportMeta } from '../shared/storage.js'
 
 export interface DailySlice {
   date: string
   content: string
+  sessionIds: string[]
 }
 
 export function extractExperienceSlicesFromReports(
@@ -30,7 +31,8 @@ export function extractExperienceSlicesFromReports(
 
     const sliceContent = extractSliceSection(markdown)
     if (sliceContent) {
-      slices.push({ date, content: sliceContent })
+      const meta = parseReportMeta(markdown)
+      slices.push({ date, content: sliceContent, sessionIds: meta?.sessionIds || [] })
     }
   }
 
