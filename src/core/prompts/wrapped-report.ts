@@ -45,6 +45,7 @@ export function buildWrappedReportPrompt(
       sessions: p.sessions,
       hours: Math.round(p.duration / 60),
       frictionDensity: Math.round(p.frictionDensity * 100) / 100,
+      ...(p.memory ? { projectMemory: p.memory } : {}),
     })),
     hourlyDistribution: aggregation.hourlyDistribution,
     toolCallDistribution: aggregation.toolCallDistribution,

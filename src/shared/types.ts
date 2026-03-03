@@ -120,6 +120,7 @@ export interface ProjectBreakdown {
   toolCalls: Record<string, number>
   filesChanged: string[]
   frictionDensity: number
+  memory?: string
 }
 
 export interface DailyAggregation {

@@ -32,7 +32,15 @@ aireport install
 
 ## Usage
 
-### 生成 Wrapped 报告
+### 生成季度报告
+
+在 Claude Code 中直接使用 slash command：
+
+```
+/qtreport
+```
+
+或手动运行：
 
 ```bash
 aireport wrapped --days 90

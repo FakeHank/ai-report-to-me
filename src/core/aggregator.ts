@@ -10,6 +10,7 @@ import type {
 } from '../shared/types.js'
 import { readMarkdown, getReportPath } from '../shared/storage.js'
 import { detectFriction } from './analyzer/friction.js'
+import { readProjectMemory } from '../adapters/claude-code/memory.js'
 
 export class Aggregator {
   aggregateDaily(sessions: NormalizedSession[], date: string): DailyAggregation {
@@ -170,6 +171,10 @@ function buildProjectBreakdown(sessions: NormalizedSession[]): ProjectBreakdown[
       0
     )
 
+    // Read memory for Claude Code projects
+    const hasClaudeCode = projectSessions.some((s) => s.cli === 'claude-code')
+    const memory = hasClaudeCode ? readProjectMemory(projectPath) : undefined
+
     breakdowns.push({
       project: projectSessions[0].projectName,
       projectPath,
@@ -178,10 +183,25 @@ function buildProjectBreakdown(sessions: NormalizedSession[]): ProjectBreakdown[
       toolCalls,
       filesChanged,
       frictionDensity: projectSessions.length > 0 ? frictionCount / projectSessions.length : 0,
+      memory,
     })
   }
 
-  return breakdowns.sort((a, b) => b.sessions - a.sessions)
+  const sorted = breakdowns.sort((a, b) => b.sessions - a.sessions)
+
+  // Cap total memory at 20KB — keep only top projects by session count
+  const MAX_MEMORY_BYTES = 20 * 1024
+  let totalMemorySize = 0
+  for (const b of sorted) {
+    if (b.memory) {
+      totalMemorySize += Buffer.byteLength(b.memory, 'utf-8')
+      if (totalMemorySize > MAX_MEMORY_BYTES) {
+        b.memory = undefined
+      }
+    }
+  }
+
+  return sorted
 }
 
 function mergeToolCalls(sessions: NormalizedSession[]): Record<string, number> {

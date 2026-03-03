@@ -111,6 +111,7 @@ function serializeAggregation(agg: DailyAggregation): string {
       duration: `${p.duration} minutes`,
       filesChanged: p.filesChanged.length,
       frictionDensity: Math.round(p.frictionDensity * 100) / 100,
+      ...(p.memory ? { projectMemory: p.memory } : {}),
     })),
     toolCalls: agg.allToolCalls,
     filesChanged: agg.allFilesChanged.slice(0, 30),
