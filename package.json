@@ -31,9 +31,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicepkg/ai-report-to-me"
+    "url": "https://github.com/FakeHank/ai-report-to-me"
   },
-  "homepage": "https://github.com/nicepkg/ai-report-to-me",
+  "homepage": "https://github.com/FakeHank/ai-report-to-me",
   "engines": {
     "node": ">=20"
   },
