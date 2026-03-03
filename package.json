@@ -1,6 +1,6 @@
 {
   "name": "ai-report-to-me",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI-powered daily reports and wrapped summaries from your coding CLI sessions",
   "type": "module",
   "bin": {
