@@ -18,12 +18,30 @@
     "ai",
     "report",
     "claude-code",
+    "gemini-cli",
+    "opencode",
+    "codex",
     "daily-report",
     "wrapped",
-    "coding-agent"
+    "coding-agent",
+    "vibe-coding",
+    "cli"
   ],
-  "author": "",
+  "author": "hankyuan",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nicepkg/ai-report-to-me"
+  },
+  "homepage": "https://github.com/nicepkg/ai-report-to-me",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "packageManager": "pnpm@10.30.3",
   "pnpm": {
     "onlyBuiltDependencies": [
