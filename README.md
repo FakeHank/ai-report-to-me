@@ -1,7 +1,7 @@
 # AI Report to Me
 
 [![npm version](https://img.shields.io/npm/v/ai-report-to-me)](https://www.npmjs.com/package/ai-report-to-me)
-[![license](https://img.shields.io/npm/l/ai-report-to-me)](./LICENSE)
+[![license](https://img.shields.io/github/license/FakeHank/ai-report-to-me)](./LICENSE)
 [![node](https://img.shields.io/node/v/ai-report-to-me)](./package.json)
 
 从你的 AI Coding Agent session 中，自动生成日报和 Wrapped 总结报告。
