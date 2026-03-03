@@ -150,11 +150,28 @@ export const installCommand = new Command('install')
     logger.info('Run `aireport status` to verify.')
 
     if (rangeAnswer.range !== '0') {
+      const days = parseInt(rangeAnswer.range) || 90
       console.log()
-      logger.info(`To generate your ${rangeAnswer.range}-day Wrapped report, run:`)
-      logger.bold(`  aireport wrapped --days ${rangeAnswer.range}`)
+      logger.info(`Generating your ${days}-day Wrapped report...`)
+      try {
+        const { execFileSync } = await import('node:child_process')
+        execFileSync(process.execPath, [...process.execArgv, ...getAireportArgs(), 'wrapped', '--days', String(days), '--prompt-only'], {
+          stdio: 'inherit',
+          env: process.env,
+        })
+      } catch {
+        logger.warn('Auto-generation failed. You can run it manually:')
+        logger.bold(`  aireport wrapped --days ${days}`)
+      }
     }
 
     logger.info('To generate daily reports, run:')
     logger.bold('  aireport daily')
   })
+
+function getAireportArgs(): string[] {
+  // If running via the built binary, use it directly; otherwise fall back to current script
+  const script = process.argv[1]
+  if (script) return [script]
+  return []
+}
