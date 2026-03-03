@@ -3,9 +3,9 @@ import dayjs from 'dayjs'
 import { existsSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import { loadConfig } from '../../shared/config.js'
-import { REPORTS_DIR, SESSION_LOG_PATH } from '../../shared/constants.js'
-import { readJsonl, readMarkdown } from '../../shared/storage.js'
-import type { SessionLogEntry } from '../../shared/types.js'
+import { REPORTS_DIR } from '../../shared/constants.js'
+import { readMarkdown } from '../../shared/storage.js'
+import { getRegistry } from '../../adapters/registry.js'
 
 export const startupCheckCommand = new Command('startup-check')
   .description('Session startup context check (called by SessionStart hook)')
@@ -33,8 +33,8 @@ export const startupCheckCommand = new Command('startup-check')
     const yesterdayReportExists = existsSync(yesterdayReportPath)
 
     if (!yesterdayReportExists) {
-      // Count yesterday's sessions from session log
-      const yesterdaySessionCount = countSessionsForDate(yesterday)
+      // Count yesterday's sessions by scanning actual session files via adapters
+      const yesterdaySessionCount = await countSessionsForDate(yesterday)
       if (yesterdaySessionCount > 0) {
         output.push(`[AI Report] 昨天有 ${yesterdaySessionCount} 个 session，日报尚未生成。输入 /dayreport 查看日报。`)
         output.push('')
@@ -63,16 +63,27 @@ export const startupCheckCommand = new Command('startup-check')
     }
 
     if (output.length > 0) {
-      process.stdout.write(output.join('\n'))
+      const text = output.join('\n')
+      process.stdout.write(text)
+      process.stderr.write(text + '\n')
     }
   })
 
-function countSessionsForDate(date: string): number {
-  if (existsSync(SESSION_LOG_PATH)) {
-    const entries = readJsonl<SessionLogEntry>(SESSION_LOG_PATH)
-    return entries.filter((e) => e.timestamp.startsWith(date)).length
+async function countSessionsForDate(date: string): Promise<number> {
+  const registry = getRegistry()
+  const adapters = await registry.getEnabledAdapters()
+  let count = 0
+  const since = new Date(`${date}T00:00:00`)
+  const until = new Date(`${date}T23:59:59`)
+  for (const adapter of adapters) {
+    try {
+      const metas = await adapter.listSessions({ since, until })
+      count += metas.length
+    } catch {
+      // skip adapter errors
+    }
   }
-  return 0
+  return count
 }
 
 function extractProjectSection(reportPath: string, projectName: string): string | null {

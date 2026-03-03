@@ -7,7 +7,6 @@ import { logger } from '../../shared/logger.js'
 import { getRegistry } from '../../adapters/registry.js'
 import { SessionReader } from '../../core/session-reader.js'
 import { Aggregator } from '../../core/aggregator.js'
-import { determineVibeCoderType } from '../../core/analyzer/vibe-coder-type.js'
 import { generateVibeCardPng } from '../../renderer/image/vibe-card.js'
 import { readMarkdown, ensureDir } from '../../shared/storage.js'
 import { WRAPPED_DIR } from '../../shared/constants.js'
@@ -30,13 +29,11 @@ export const regenVibeCardCommand = new Command('regen-vibe-card')
       return
     }
 
-    // Extract Section 7 commentary
-    const commentary = extractSection7(markdown)
-    if (!commentary) {
-      logger.warn('Could not extract Section 7 from report, generating card without commentary')
-    }
+    // Extract Section 7 vibe type info from AI-generated content
+    const vibeInfo = parseVibeFromSection7(markdown)
+    const commentary = extractSection7Body(markdown)
 
-    // Re-run lightweight pipeline for vibe type + stats
+    // Re-run lightweight pipeline for stats
     loadConfig() // ensure config is loaded
     const registry = getRegistry()
     const adapters = await registry.getEnabledAdapters()
@@ -58,14 +55,13 @@ export const regenVibeCardCommand = new Command('regen-vibe-card')
 
     const aggregator = new Aggregator()
     const aggregation = aggregator.aggregateWrapped(sessions, days)
-    const vibeType = determineVibeCoderType(sessions)
     const topProject = aggregation.projectBreakdown[0]?.project || 'N/A'
 
     try {
       const pngBuffer = await generateVibeCardPng({
-        emoji: vibeType.emoji,
-        label: vibeType.label,
-        reason: vibeType.reason,
+        emoji: vibeInfo.emoji,
+        label: vibeInfo.label,
+        reason: vibeInfo.reason,
         periodLabel: `${aggregation.startDate} — ${aggregation.endDate}`,
         stats: {
           totalSessions: aggregation.totalSessions,
@@ -86,13 +82,50 @@ export const regenVibeCardCommand = new Command('regen-vibe-card')
   })
 
 /**
- * Extract the Section 7 ("你是哪种 Vibe Coder") body text from a wrapped report markdown.
- * Returns the commentary text (excluding the heading), or null if not found.
+ * Parse the AI-generated vibe coder type from Section 7.
+ * Looks for the format: **[emoji] [类型名称]**
+ * Falls back to defaults if parsing fails.
  */
-function extractSection7(markdown: string): string | null {
-  const lines = markdown.split('\n')
+function parseVibeFromSection7(markdown: string): { emoji: string; label: string; reason: string } {
+  const section7 = extractSection7Content(markdown)
+  if (!section7) {
+    return { emoji: '⚡', label: '⚡ Vibe Coder', reason: '' }
+  }
 
-  // Find the Section 7 heading
+  // Match **[emoji] [label]** pattern
+  const match = section7.match(/\*\*\s*([\p{Emoji_Presentation}\p{Extended_Pictographic}])\s*(.+?)\s*\*\*/u)
+  if (match) {
+    const emoji = match[1]
+    const typeName = match[2]
+    // Use the rest of section 7 (after the type line) as reason
+    const lines = section7.split('\n')
+    const reasonLines: string[] = []
+    let foundType = false
+    for (const line of lines) {
+      if (!foundType && line.includes(match[0])) {
+        foundType = true
+        continue
+      }
+      if (foundType && line.trim()) {
+        reasonLines.push(line.trim())
+      }
+    }
+    const reason = reasonLines.join(' ').slice(0, 200)
+    return {
+      emoji,
+      label: `${emoji} ${typeName}`,
+      reason: reason || typeName,
+    }
+  }
+
+  return { emoji: '⚡', label: '⚡ Vibe Coder', reason: '' }
+}
+
+/**
+ * Extract raw Section 7 content (including the type header line).
+ */
+function extractSection7Content(markdown: string): string | null {
+  const lines = markdown.split('\n')
   let startIdx = -1
   for (let i = 0; i < lines.length; i++) {
     if (/^#{1,3}\s.*(?:Vibe\s*Coder|vibe\s*coder|哪种)/i.test(lines[i])) {
@@ -102,7 +135,6 @@ function extractSection7(markdown: string): string | null {
   }
   if (startIdx === -1) return null
 
-  // Collect until next same-level-or-higher heading or end
   const contentLines: string[] = []
   const headingMatch = lines[startIdx - 1].match(/^(#{1,3})/)
   const headingLevel = headingMatch ? headingMatch[1].length : 2
@@ -113,18 +145,25 @@ function extractSection7(markdown: string): string | null {
     contentLines.push(lines[i])
   }
 
-  let text = contentLines.join('\n').trim()
-  if (text.length <= 10) return null
+  const text = contentLines.join('\n').trim()
+  return text.length > 10 ? text : null
+}
 
-  // Clean markdown artifacts: headings, bold/italic markers, blockquotes
-  text = text
-    .replace(/^#{1,6}\s+.*$/gm, '')       // remove sub-headings (e.g. ### 🔁 反复横跳型)
-    .replace(/^>\s*/gm, '')                // remove blockquote markers
-    .replace(/\*\*(.*?)\*\*/g, '$1')       // **bold** → bold
-    .replace(/\*(.*?)\*/g, '$1')           // *italic* → italic
-    .replace(/`([^`]+)`/g, '$1')           // `code` → code
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [text](url) → text
-    .replace(/\n{3,}/g, '\n\n')            // collapse multiple blank lines
+/**
+ * Extract the Section 7 body text (cleaned, for commentary on the card).
+ */
+function extractSection7Body(markdown: string): string | null {
+  const content = extractSection7Content(markdown)
+  if (!content) return null
+
+  let text = content
+    .replace(/^#{1,6}\s+.*$/gm, '')
+    .replace(/^>\s*/gm, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
     .trim()
 
   return text.length > 10 ? text : null

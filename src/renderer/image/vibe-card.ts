@@ -18,17 +18,22 @@ export interface VibeCardOptions {
   commentary?: string
 }
 
-// Badge gradient colors per emoji
-const BADGE_COLORS: Record<string, [string, string]> = {
-  '🔁': ['#6366F1', '#8B5CF6'],
-  '🌙': ['#1E293B', '#475569'],
-  '🏃': ['#F59E0B', '#EF4444'],
-  '🧱': ['#78716C', '#A8A29E'],
-  '💬': ['#3B82F6', '#06B6D4'],
-  '🧹': ['#10B981', '#34D399'],
-  '🏔': ['#7C3AED', '#4F46E5'],
-  '🔥': ['#EF4444', '#F97316'],
-  '⚖️': ['#6B7280', '#9CA3AF'],
+// Preset gradient color palette — selected by hashing the label string
+const COLOR_PALETTE: [string, string][] = [
+  ['#6366F1', '#8B5CF6'],  // 紫
+  ['#3B82F6', '#06B6D4'],  // 蓝青
+  ['#F59E0B', '#EF4444'],  // 琥珀红
+  ['#10B981', '#34D399'],  // 绿
+  ['#EC4899', '#F43F5E'],  // 粉红
+  ['#7C3AED', '#4F46E5'],  // 靛紫
+]
+
+function hashString(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash)
 }
 
 function stripEmoji(text: string): string {
@@ -92,9 +97,10 @@ function h(type: string, props: Record<string, unknown>, ...children: (string | 
 }
 
 function buildCard(options: VibeCardOptions): SatoriNode {
-  const { emoji, reason, periodLabel, stats, commentary } = options
+  const { reason, periodLabel, stats, commentary } = options
   const label = stripEmoji(options.label)
-  const [color1, color2] = BADGE_COLORS[emoji] || ['#6366F1', '#8B5CF6']
+  const colorIndex = hashString(label) % COLOR_PALETTE.length
+  const [color1, color2] = COLOR_PALETTE[colorIndex]
   const badgeText = label.slice(0, 2)
   const topProject = stats.topProject.length > 18 ? stats.topProject.slice(0, 16) + '...' : stats.topProject
 

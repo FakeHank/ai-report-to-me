@@ -1,13 +1,13 @@
 import type { WrappedAggregation, SemanticSummary } from '../../shared/types.js'
 import type { HabitsAnalysis } from '../analyzer/habits.js'
-import type { VibeCoderResult } from '../analyzer/vibe-coder-type.js'
+import type { VibeSignals } from '../analyzer/vibe-coder-type.js'
 import type { Improvement } from '../analyzer/improvements.js'
 import type { DailySlice } from '../daily-slices-extractor.js'
 
 export function buildWrappedReportPrompt(
   aggregation: WrappedAggregation,
   habits: HabitsAnalysis,
-  vibeType: VibeCoderResult,
+  vibeSignals: VibeSignals,
   improvements: Improvement[],
   lang: string,
   dailySlices?: DailySlice[],
@@ -62,7 +62,7 @@ export function buildWrappedReportPrompt(
       content: s.content.slice(0, 2000),
     })) || [],
     habits,
-    vibeCoderType: vibeType,
+    vibeSignals,
     improvements,
     ...(semanticSummary ? {
       semanticData: {
@@ -89,7 +89,7 @@ ${data}
 
 Generate the report in this exact Markdown structure:
 
-### Section 1: AI 眼中的这 ${aggregation.days} 天
+### Section 1: AI's Perspective on the Last ${aggregation.days} Days
 
 Write 3-5 short paragraphs (separated by blank lines) in third person. Structure them as a narrative arc:
 - Opening: set the scene — how the journey began
@@ -100,17 +100,17 @@ Write 3-5 short paragraphs (separated by blank lines) in third person. Structure
 
 Each paragraph should be 2-4 sentences. Mention specific projects, peak periods, and surprising patterns. If \`semanticData.sessionSlices\` is available, use the \`userQueries\` to understand what the user was actually working on and weave specific tasks into the narrative arc. Make the reader want to screenshot this section.
 
-### Section 2: 关键数字仪表盘
+### Section 2: Key Metrics Dashboard
 
 A table with key metrics: total sessions, total messages, total tokens, average session duration, longest session, active days, top 3 tool calls, CLI distribution.
 
 If \`hasNonTokenCli\` is true, add a footnote below the table: "* Token 消耗数仅反映 ${tokenSource.length > 0 ? tokenSource.join(' / ') : 'N/A'} 的数据，其他 CLI 不提供 token 统计。"
 
-### Section 3: 项目地图
+### Section 3: Project Map
 
 A table with per-project stats: sessions, hours, friction density, status (active/dormant). A project is dormant if it has no session in the last 7 days. For dormant projects, add a one-liner comment.
 
-### Section 4: 使用习惯分析
+### Section 4: Usage Habits Analysis
 
 Data-driven observations about:
 - Startup style (cold vs contextual)
@@ -121,13 +121,13 @@ Data-driven observations about:
 
 If \`semanticData\` is available, go beyond statistical indicators: use \`directionChanges\` and \`aiResponses\` to analyze the user's thinking patterns, how they correct the AI, and their decision-making style. Quote specific examples where they reveal interesting cognitive patterns.
 
-### Section 5: 应该改进的地方
+### Section 5: Areas for Improvement
 
 3-5 specific, data-backed suggestions. Each must have: observation with numbers → actionable suggestion.
 
 If \`semanticData.errorSamples\` and \`semanticData.debuggingStruggles\` are available, use them to give targeted improvement advice — reference real error messages and struggling files rather than generic patterns.
 
-### Section 6: 经验沉淀
+### Section 6: Experience Accumulation
 
 You have access to all daily experience slices (dailyExperienceSlices) and friction records from this period.
 
@@ -138,36 +138,55 @@ Your task:
 
 Format for each insight:
 ### [Universal principle title]
-- **频次**：Appeared M times across N days (or which projects were affected)
-- **典型场景**：The most representative instance
-- **通用原则**：The transferable insight abstracted from specific experiences
-- **实操建议**：Concrete action for next time a similar situation arises
-- **来源**：session IDs [...] (use the sessionIds from the dailyExperienceSlices entries that contributed to this insight)
+- **Frequency**：Appeared M times across N days (or which projects were affected)
+- **Typical Scenario**：The most representative instance
+- **General Principle**：The transferable insight abstracted from specific experiences
+- **Actionable Advice**：Concrete action for next time a similar situation arises
+- **Source**：session IDs [...] (use the sessionIds from the dailyExperienceSlices entries that contributed to this insight)
 
 Write at most 5 insights. Quality over quantity — if there aren't enough meaningful patterns, write fewer.
 
-### Section 7: 你是哪种 Vibe Coder
+### Section 7: What Kind of Vibe Coder Are You?
 
-The user's vibe coder type: ${vibeType.label}
+Based on the \`vibeSignals\` data, **invent a creative vibe coder type** for this user. You have full creative freedom — do NOT use a fixed set of categories.
 
-Write a roast/monologue from the AI's first-person perspective. It should be:
+Here are the signal metrics to analyze:
+- \`nightSessionRatio\`: ${vibeSignals.nightSessionRatio} (ratio of sessions started between 22:00-04:00)
+- \`medianSessionMinutes\`: ${vibeSignals.medianSessionMinutes}
+- \`averageSessionMinutes\`: ${vibeSignals.averageSessionMinutes}
+- \`readBashToolRatio\`: ${vibeSignals.readBashToolRatio} (ratio of Read/Bash/Grep/Glob vs all tool calls)
+- \`userMsgPerToolCall\`: ${vibeSignals.userMsgPerToolCall} (higher = more talkative)
+- \`refactorEditRatio\`: ${vibeSignals.refactorEditRatio} (ratio of refactoring edits)
+- \`peakDaySessions\`: ${vibeSignals.peakDaySessions} (most sessions in a single day)
+- \`highEditRepeatSessions\`: ${vibeSignals.highEditRepeatSessions} (sessions where same file was edited 8+ times)
+- \`totalSessions\`: ${vibeSignals.totalSessions}
+- \`totalEdits\`: ${vibeSignals.totalEdits}
+- \`totalToolCalls\`: ${vibeSignals.totalToolCalls}
+
+**Inspiration examples** (feel free to invent your own): "深夜幽灵型"、"反复横跳型"、"闪现游击型"、"砌墙专家型"、"话痨驱动型"、"重构上瘾型"
+
+**Format requirement**: Start the section body with exactly this format on the first line:
+\`**[emoji] [类型名称]**\`
+For example: \`**🌙 深夜幽灵型**\` or \`**⚡ 闪电迭代者**\`
+
+Then write a roast/monologue from the AI's first-person perspective. It should be:
 - Witty and slightly mean (but affectionate)
 - Cross-reference specific projects and events from Section 1's narrative
 - Reference the collaboration style, startup patterns, and peak hours from the habits analysis
 - Mention at least one specific project name by name
-- Use concrete data points from \`vibeCoderType.reason\` to back up the classification
+- Use concrete signal data to back up the classification
 - If \`semanticData.sessionSlices\` is available, quote or paraphrase a specific \`userQuery\` that perfectly exemplifies the vibe coder type
 - End with something memorable/quotable
 - 3-5 sentences
 
-### Section 8: 下一步
+### Section 8: Next Actions
 
 2-3 concrete next actions based on the analysis.
 
 ## Rules
 
 1. Be specific — reference real numbers, projects, and patterns
-2. The "AI 的思考" sections should be uncomfortably honest
+2. The "AI's Thinking" sections should be uncomfortably honest
 3. Section 7 should be funny enough to screenshot
 4. Do NOT pad with generic advice — every insight must be data-backed
 5. Do NOT include the meta comment block`

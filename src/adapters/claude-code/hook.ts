@@ -1,9 +1,20 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import { CLAUDE_SETTINGS_PATH } from '../../shared/constants.js'
 import type { HookStatus } from '../adapter.interface.js'
 
-const HOOK_COMMAND = 'aireport log-session --cli claude-code'
-const STARTUP_HOOK_COMMAND = 'aireport startup-check'
+function resolveAireportBin(): string {
+  try {
+    return execSync('which aireport', { encoding: 'utf-8' }).trim()
+  } catch {
+    return 'aireport'
+  }
+}
+
+function matchesAireportCommand(cmd: string, suffix: string): boolean {
+  // Match both bare "aireport <suffix>" and absolute path "/…/aireport <suffix>"
+  return cmd === `aireport ${suffix}` || cmd.endsWith(`/aireport ${suffix}`)
+}
 
 interface HookEntry {
   matcher?: string
@@ -19,12 +30,24 @@ interface ClaudeSettings {
   [key: string]: unknown
 }
 
-function hasCommand(entries: HookEntry[] | undefined, command: string): boolean {
-  return entries?.some((entry) => entry.hooks?.some((h) => h.command === command)) || false
+const LOG_SUFFIX = 'log-session --cli claude-code'
+const STARTUP_SUFFIX = 'startup-check'
+
+function hasAireportHook(entries: HookEntry[] | undefined, suffix: string): boolean {
+  return entries?.some((entry) =>
+    entry.hooks?.some((h) => matchesAireportCommand(h.command, suffix))
+  ) || false
+}
+
+function removeAireportHook(entries: HookEntry[], suffix: string): HookEntry[] {
+  return entries.filter(
+    (entry) => !entry.hooks?.some((h) => matchesAireportCommand(h.command, suffix))
+  )
 }
 
 export async function installHook(): Promise<void> {
   const settings = readSettings()
+  const bin = resolveAireportBin()
 
   if (!settings.hooks) {
     settings.hooks = {}
@@ -36,10 +59,10 @@ export async function installHook(): Promise<void> {
   if (!settings.hooks.SessionEnd) {
     settings.hooks.SessionEnd = []
   }
-  if (!hasCommand(settings.hooks.SessionEnd, HOOK_COMMAND)) {
+  if (!hasAireportHook(settings.hooks.SessionEnd, LOG_SUFFIX)) {
     settings.hooks.SessionEnd.push({
       matcher: '*',
-      hooks: [{ type: 'command', command: HOOK_COMMAND }],
+      hooks: [{ type: 'command', command: `${bin} ${LOG_SUFFIX}` }],
     })
     changed = true
   }
@@ -48,10 +71,10 @@ export async function installHook(): Promise<void> {
   if (!settings.hooks.SessionStart) {
     settings.hooks.SessionStart = []
   }
-  if (!hasCommand(settings.hooks.SessionStart, STARTUP_HOOK_COMMAND)) {
+  if (!hasAireportHook(settings.hooks.SessionStart, STARTUP_SUFFIX)) {
     settings.hooks.SessionStart.push({
       matcher: '*',
-      hooks: [{ type: 'command', command: STARTUP_HOOK_COMMAND }],
+      hooks: [{ type: 'command', command: `${bin} ${STARTUP_SUFFIX}` }],
     })
     changed = true
   }
@@ -67,18 +90,14 @@ export async function uninstallHook(): Promise<void> {
   const settings = readSettings()
 
   if (settings.hooks?.SessionEnd) {
-    settings.hooks.SessionEnd = settings.hooks.SessionEnd.filter(
-      (entry) => !entry.hooks?.some((h) => h.command === HOOK_COMMAND)
-    )
+    settings.hooks.SessionEnd = removeAireportHook(settings.hooks.SessionEnd, LOG_SUFFIX)
     if (settings.hooks.SessionEnd.length === 0) {
       delete settings.hooks.SessionEnd
     }
   }
 
   if (settings.hooks?.SessionStart) {
-    settings.hooks.SessionStart = settings.hooks.SessionStart.filter(
-      (entry) => !entry.hooks?.some((h) => h.command === STARTUP_HOOK_COMMAND)
-    )
+    settings.hooks.SessionStart = removeAireportHook(settings.hooks.SessionStart, STARTUP_SUFFIX)
     if (settings.hooks.SessionStart.length === 0) {
       delete settings.hooks.SessionStart
     }
@@ -93,8 +112,8 @@ export async function checkHookStatus(): Promise<HookStatus> {
   }
 
   const settings = readSettings()
-  const sessionEndInstalled = hasCommand(settings.hooks?.SessionEnd, HOOK_COMMAND)
-  const startupInstalled = hasCommand(settings.hooks?.SessionStart, STARTUP_HOOK_COMMAND)
+  const sessionEndInstalled = hasAireportHook(settings.hooks?.SessionEnd, LOG_SUFFIX)
+  const startupInstalled = hasAireportHook(settings.hooks?.SessionStart, STARTUP_SUFFIX)
 
   return {
     installed: sessionEndInstalled && startupInstalled,

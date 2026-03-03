@@ -6,17 +6,13 @@ import { getRegistry } from '../../adapters/registry.js'
 import { SessionReader } from '../../core/session-reader.js'
 import { Aggregator } from '../../core/aggregator.js'
 import { analyzeHabits } from '../../core/analyzer/habits.js'
-import { determineVibeCoderType } from '../../core/analyzer/vibe-coder-type.js'
+import { extractVibeSignals } from '../../core/analyzer/vibe-coder-type.js'
 import { generateImprovements } from '../../core/analyzer/improvements.js'
 import { detectFriction } from '../../core/analyzer/friction.js'
 import { aggregateSemantics } from '../../core/analyzer/semantic-aggregator.js'
 import { buildWrappedReportPrompt } from '../../core/prompts/wrapped-report.js'
 import { extractExperienceSlicesFromReports } from '../../core/daily-slices-extractor.js'
-import { generateVibeCardPng } from '../../renderer/image/vibe-card.js'
-import { REPORTS_DIR, WRAPPED_DIR } from '../../shared/constants.js'
-import { ensureDir } from '../../shared/storage.js'
-import { writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { REPORTS_DIR } from '../../shared/constants.js'
 import type { FrictionRecord } from '../../shared/types.js'
 
 export const wrappedCommand = new Command('wrapped')
@@ -52,7 +48,7 @@ export const wrappedCommand = new Command('wrapped')
     const aggregator = new Aggregator()
     const aggregation = aggregator.aggregateWrapped(sessions, days)
     const habits = analyzeHabits(sessions)
-    const vibeType = determineVibeCoderType(sessions)
+    const vibeSignals = extractVibeSignals(sessions)
     const allFrictions: FrictionRecord[] = []
     for (const s of sessions) {
       allFrictions.push(...detectFriction(s))
@@ -71,7 +67,7 @@ export const wrappedCommand = new Command('wrapped')
         averageSessionMinutes: aggregation.averageSessionMinutes,
         longestSession: aggregation.longestSession,
         projectBreakdown: aggregation.projectBreakdown,
-        vibeCoderType: vibeType,
+        vibeSignals,
         habits,
         improvements,
         frictionCount: allFrictions.length,
@@ -86,7 +82,7 @@ export const wrappedCommand = new Command('wrapped')
       aggregation.endDate
     )
 
-    const prompt = buildWrappedReportPrompt(aggregation, habits, vibeType, improvements, config.output_lang, dailySlices, semanticSummary)
+    const prompt = buildWrappedReportPrompt(aggregation, habits, vibeSignals, improvements, config.output_lang, dailySlices, semanticSummary)
 
     if (opts.promptOnly) {
       // Clean output for slash command consumption
@@ -101,29 +97,5 @@ export const wrappedCommand = new Command('wrapped')
       console.log('='.repeat(60))
       console.log('\nPlease generate the Wrapped report based on the prompt above.')
       console.log('='.repeat(60) + '\n')
-    }
-
-    // Generate vibe coder card PNG
-    const topProject = aggregation.projectBreakdown[0]?.project || 'N/A'
-    try {
-      const pngBuffer = await generateVibeCardPng({
-        emoji: vibeType.emoji,
-        label: vibeType.label,
-        reason: vibeType.reason,
-        periodLabel: `${aggregation.startDate} — ${aggregation.endDate}`,
-        stats: {
-          totalSessions: aggregation.totalSessions,
-          totalHours: Math.round(aggregation.totalDurationMinutes / 60),
-          activeDays: aggregation.activeDays,
-          topProject,
-        },
-      })
-
-      ensureDir(WRAPPED_DIR)
-      const cardPath = join(WRAPPED_DIR, `vibe-card-${aggregation.startDate}_${aggregation.endDate}.png`)
-      writeFileSync(cardPath, pngBuffer)
-      logger.info(`Vibe coder card saved to ${cardPath}`)
-    } catch (err) {
-      logger.error(`Failed to generate vibe card: ${err instanceof Error ? err.message : String(err)}`)
     }
   })
