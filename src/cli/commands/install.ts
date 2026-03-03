@@ -35,20 +35,14 @@ export const installCommand = new Command('install')
       value: r.name,
     }))
 
-    let selectedSources: string[]
-    if (detected.length === 1) {
-      selectedSources = [detected[0].name]
-      logger.info(`Using ${detected[0].name} as data source`)
-    } else {
-      const sourceAnswer = await prompt<{ sources: string[] }>({
-        type: 'multiselect',
-        name: 'sources',
-        message: 'Select data sources:',
-        choices: sourceChoices,
-        initial: sourceChoices.map((_, i) => i),
-      } as any)
-      selectedSources = sourceAnswer.sources
-    }
+    const sourceAnswer = await prompt<{ sources: string[] }>({
+      type: 'multiselect',
+      name: 'sources',
+      message: 'Select data sources:',
+      choices: sourceChoices,
+      initial: sourceChoices.map((_, i) => i),
+    } as any)
+    const selectedSources = sourceAnswer.sources
 
     // Step 3: Select language
     const langAnswer = await prompt<{ lang: string }>({
