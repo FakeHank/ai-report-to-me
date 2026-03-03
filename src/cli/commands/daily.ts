@@ -8,6 +8,7 @@ import { Aggregator } from '../../core/aggregator.js'
 import { buildDailyReportPrompt } from '../../core/prompts/daily-report.js'
 import { renderDailyMarkdown } from '../../renderer/markdown/daily.js'
 import { LocalFileOutput } from '../../output/local-file.js'
+import { resolveWebhookOutputs } from '../../output/webhook/index.js'
 
 export const dailyCommand = new Command('daily')
   .description('Generate daily report(s)')
@@ -139,4 +140,17 @@ export const saveDailyCommand = new Command('save-daily')
     })
 
     logger.success(`Daily report saved to ~/.ai-report/reports/${opts.date}.md`)
+
+    // Push to configured webhooks
+    const webhookOutputs = resolveWebhookOutputs(loadConfig())
+    if (webhookOutputs.length > 0) {
+      const metadata = { type: 'daily' as const, date: opts.date, fileName: `${opts.date}.md` }
+      const results = await Promise.allSettled(
+        webhookOutputs.map(o => o.send(markdown, metadata))
+      )
+      const failed = results.filter(r => r.status === 'rejected')
+      if (failed.length > 0) {
+        logger.warn(`${failed.length} webhook(s) failed to send`)
+      }
+    }
   })

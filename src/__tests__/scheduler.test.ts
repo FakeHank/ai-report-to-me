@@ -2,6 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { ReportScheduler } from '../core/report-scheduler.js'
 import type { NormalizedSession, SessionStats } from '../shared/types.js'
 
+/** Format a Date as YYYY-MM-DD */
+function fmt(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
 function makeSession(id: string, date: string): NormalizedSession {
   const stats: SessionStats = {
     messageCount: 2,
@@ -34,16 +39,18 @@ describe('ReportScheduler', () => {
   const scheduler = new ReportScheduler()
 
   it('should mark all days as pending when no reports exist', () => {
+    // Use today as the session date — no report should exist for today yet
+    const today = fmt(new Date())
+
     const sessionsByDay = new Map([
-      ['2026-02-26', [makeSession('s1', '2026-02-26')]],
-      ['2026-02-27', [makeSession('s2', '2026-02-27')]],
-      ['2026-02-28', [makeSession('s3', '2026-02-28')]],
+      [today, [makeSession('s1', today), makeSession('s2', today)]],
     ])
 
     const pending = scheduler.getPendingDays(sessionsByDay)
-    expect(pending).toHaveLength(3)
-    expect(pending.map((p) => p.date)).toEqual(['2026-02-26', '2026-02-27', '2026-02-28'])
-    expect(pending.every((p) => p.reason === 'new')).toBe(true)
+    expect(pending).toHaveLength(1)
+    expect(pending[0].date).toBe(today)
+    expect(pending[0].reason).toBe('new')
+    expect(pending[0].sessions).toHaveLength(2)
   })
 
   it('should return empty array when no sessions', () => {

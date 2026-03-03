@@ -25,6 +25,19 @@ export const statusCommand = new Command('status')
       }
     }
 
+    // Show webhook configuration
+    const webhookEntries = Object.entries(config.webhooks).filter(([, v]) => v)
+    console.log()
+    if (webhookEntries.length > 0) {
+      logger.info(`Webhooks: ${webhookEntries.length} configured`)
+      for (const [key] of webhookEntries) {
+        const platform = key.replace('_url', '')
+        logger.success(`  ${platform}: configured`)
+      }
+    } else {
+      logger.dim('Webhooks: none configured')
+    }
+
     const reports = getExistingReportDates()
     console.log()
     if (reports.length > 0) {
@@ -33,10 +46,4 @@ export const statusCommand = new Command('status')
       logger.dim('Reports: none generated yet')
     }
 
-    if (config.webhook_slack) logger.success('Webhook: Slack configured')
-    if (config.webhook_discord) logger.success('Webhook: Discord configured')
-    if (config.webhook_feishu) logger.success('Webhook: Feishu configured')
-    if (!config.webhook_slack && !config.webhook_discord && !config.webhook_feishu) {
-      logger.dim('Webhook: not configured (optional)')
-    }
   })

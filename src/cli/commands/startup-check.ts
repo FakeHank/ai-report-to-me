@@ -11,6 +11,15 @@ export const startupCheckCommand = new Command('startup-check')
   .description('Session startup context check (called by SessionStart hook)')
   .action(async () => {
     const config = loadConfig()
+
+    // If sources not configured yet, remind user to run install wizard
+    if (config.sources.length === 0) {
+      const msg = '[AI Report] aireport 尚未配置。请运行 `aireport install` 进行初始设置（选择数据源、语言等）。\n'
+      process.stdout.write(msg)
+      process.stderr.write(msg)
+      return
+    }
+
     if (!config.daily_reminder) return
 
     // Read stdin for session info (SessionStart hook provides session_id, cwd, etc.)

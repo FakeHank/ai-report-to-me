@@ -3,20 +3,28 @@ import { dirname } from 'node:path'
 import { z } from 'zod'
 import { CONFIG_PATH, DEFAULT_BACKFILL_LIMIT } from './constants.js'
 
+const WebhookConfigSchema = z.object({
+  slack_url: z.string().url().optional(),
+  discord_url: z.string().url().optional(),
+  feishu_url: z.string().url().optional(),
+  dingtalk_url: z.string().url().optional(),
+  wecom_url: z.string().url().optional(),
+  teams_url: z.string().url().optional(),
+}).default({})
+
 const ConfigSchema = z.object({
   output_lang: z.enum(['en', 'zh', 'ru', 'ja', 'ko']).default('en'),
   sources: z.array(z.string()).default([]),
   daily_reminder: z.boolean().default(true),
   backfill_limit: z.number().int().min(1).max(30).default(DEFAULT_BACKFILL_LIMIT),
-  webhook_slack: z.string().optional(),
-  webhook_discord: z.string().optional(),
-  webhook_wecom: z.string().optional(),
-  webhook_feishu: z.string().optional(),
   privacy_mode: z.boolean().default(true),
   wrapped_days: z.number().int().min(7).default(90),
+  webhooks: WebhookConfigSchema,
 })
 
 export type Config = z.infer<typeof ConfigSchema>
+
+export type WebhookConfig = z.infer<typeof WebhookConfigSchema>
 
 const DEFAULT_CONFIG: Config = {
   output_lang: 'en',
@@ -25,6 +33,7 @@ const DEFAULT_CONFIG: Config = {
   backfill_limit: DEFAULT_BACKFILL_LIMIT,
   privacy_mode: true,
   wrapped_days: 90,
+  webhooks: {},
 }
 
 export function loadConfig(): Config {
