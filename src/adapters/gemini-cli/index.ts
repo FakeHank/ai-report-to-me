@@ -4,6 +4,7 @@ import type { CLIAdapter, DetectResult, SessionFilter, SessionMeta } from '../ad
 import type { NormalizedSession } from '../../shared/types.js'
 import { GEMINI_TMP_DIR } from '../../shared/constants.js'
 import { parseGeminiSession } from './parser.js'
+import { installHook, uninstallHook, checkHookStatus } from './hook.js'
 
 export class GeminiCliAdapter implements CLIAdapter {
   readonly name = 'gemini-cli'
@@ -85,6 +86,10 @@ export class GeminiCliAdapter implements CLIAdapter {
   async readSession(sessionId: string, meta: SessionMeta): Promise<NormalizedSession> {
     return parseGeminiSession(meta.filePath, meta.projectPath)
   }
+
+  installHook = installHook
+  uninstallHook = uninstallHook
+  checkHookStatus = checkHookStatus
 }
 
 function countSessionFiles(tmpDir: string): number {
