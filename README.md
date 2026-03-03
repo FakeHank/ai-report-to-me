@@ -21,7 +21,7 @@ It works with **Claude Code**, **Gemini CLI**, **OpenCode**, and **Codex**. All 
 - **Daily Reports** — Structured summaries of what you built, what broke, and what you learned. Includes "Experience Slices": distilled problem-solving stories with transferable insights.
 - **90-Day Wrapped** — A Spotify Wrapped-style retrospective with session stats, hourly heatmaps, top projects, and a "Vibe Coder" personality classification (e.g. *Night Ghost*, *Flash Raider*, *Refactor Addict*).
 - **Friction Detection** — Automatically identifies retry loops, error cascades, and direction switches in your sessions.
-- **Startup Reminders** — A Claude Code hook nudges you to generate yesterday's report when you start a new session.
+- **Startup Reminders** — Claude Code's SessionStart hook nudges you to generate yesterday's report. OpenCode gets a custom `ai_report_check` tool you can invoke in chat.
 - **Webhook Push** — Send reports to Slack, Discord, Feishu, DingTalk, WeCom, or Microsoft Teams.
 - **Multi-Language** — Reports generated in English, Chinese, Japanese, Korean, or Russian.
 
@@ -76,12 +76,12 @@ Reports are saved to `~/.ai-report/reports/` with embedded metadata for incremen
 
 ## Supported CLIs
 
-| CLI Tool | Session Source | Status |
-|---|---|---|
-| [Claude Code](https://claude.ai/code) | `~/.claude/projects/` | Fully supported |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `~/.gemini/tmp/` | Supported |
-| [OpenCode](https://github.com/opencode-ai/opencode) | `~/.local/share/opencode/opencode.db` | Supported |
-| [Codex](https://github.com/openai/codex) | `~/.codex/sessions/` | Supported |
+| CLI Tool | Session Source | Hook Support | Notes |
+|---|---|---|---|
+| [Claude Code](https://claude.ai/code) | `~/.claude/projects/` | Full | SessionStart hook (startup check) |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `~/.gemini/tmp/` | None | Session data read directly |
+| [OpenCode](https://github.com/opencode-ai/opencode) | `~/.local/share/opencode/opencode.db` | Partial | Plugin with custom `ai_report_check` tool |
+| [Codex](https://github.com/openai/codex) | `~/.codex/sessions/` | None | Session data read directly |
 
 ## CLI Reference
 

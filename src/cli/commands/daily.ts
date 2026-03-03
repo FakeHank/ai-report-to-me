@@ -18,7 +18,7 @@ export const dailyCommand = new Command('daily')
   .action(async (opts: { dryRun?: boolean; promptOnly?: boolean; date?: string }) => {
     const config = loadConfig()
     const registry = getRegistry()
-    const adapters = await registry.getEnabledAdapters()
+    const adapters = await registry.getConfiguredAdapters(config.sources)
 
     if (adapters.length === 0) {
       logger.error('No CLI adapters detected. Run `aireport install` first.')
@@ -121,8 +121,9 @@ export const saveDailyCommand = new Command('save-daily')
       content = Buffer.concat(chunks).toString('utf-8')
     }
 
+    const config = loadConfig()
     const registry = getRegistry()
-    const adapters = await registry.getEnabledAdapters()
+    const adapters = await registry.getConfiguredAdapters(config.sources)
     const reader = new SessionReader(adapters)
     const sessionsByDay = await reader.readSessionsByDay({
       since: new Date(opts.date + 'T00:00:00'),
@@ -142,7 +143,7 @@ export const saveDailyCommand = new Command('save-daily')
     logger.success(`Daily report saved to ~/.ai-report/reports/${opts.date}.md`)
 
     // Push to configured webhooks
-    const webhookOutputs = resolveWebhookOutputs(loadConfig())
+    const webhookOutputs = resolveWebhookOutputs(config)
     if (webhookOutputs.length > 0) {
       const metadata = { type: 'daily' as const, date: opts.date, fileName: `${opts.date}.md` }
       const results = await Promise.allSettled(

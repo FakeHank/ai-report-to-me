@@ -20,6 +20,17 @@ export class AdapterRegistry {
     return this.adapters.filter((_, i) => results[i].installed)
   }
 
+  /**
+   * Get adapters that are both installed AND listed in the config sources.
+   * Use this for report generation commands (daily, wrapped, startup-check).
+   */
+  async getConfiguredAdapters(sources: string[]): Promise<CLIAdapter[]> {
+    if (sources.length === 0) return this.getEnabledAdapters()
+    const results = await this.detectAll()
+    const sourceSet = new Set(sources)
+    return this.adapters.filter((a, i) => results[i].installed && sourceSet.has(a.name))
+  }
+
   getAdapter(name: string): CLIAdapter | undefined {
     return this.adapters.find((a) => a.name === name)
   }

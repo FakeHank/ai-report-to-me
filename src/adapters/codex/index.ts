@@ -1,9 +1,10 @@
-import { existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CLIAdapter, DetectResult, SessionFilter, SessionMeta } from '../adapter.interface.js'
 import type { NormalizedSession } from '../../shared/types.js'
 import { CODEX_SESSIONS_DIR } from '../../shared/constants.js'
 import { parseCodexSession, extractSessionId } from './parser.js'
+import { installHook, uninstallHook, checkHookStatus } from './hook.js'
 
 export class CodexAdapter implements CLIAdapter {
   readonly name = 'codex'
@@ -47,6 +48,10 @@ export class CodexAdapter implements CLIAdapter {
   async readSession(sessionId: string, meta: SessionMeta): Promise<NormalizedSession> {
     return parseCodexSession(meta.filePath, meta.projectPath)
   }
+
+  installHook = installHook
+  uninstallHook = uninstallHook
+  checkHookStatus = checkHookStatus
 }
 
 /**
@@ -73,11 +78,14 @@ function scanSessionDir(dir: string, filter: SessionFilter | undefined, sessions
         if (filter?.until && startTime > filter.until) continue
 
         const sessionId = extractSessionId(fullPath)
+        const { cwd, projectName } = extractCwdFromFirstLine(fullPath)
+
+        if (filter?.projectPath && cwd && cwd !== filter.projectPath) continue
 
         sessions.push({
           sessionId,
-          projectPath: '', // Will be populated from session_meta during readSession
-          projectName: 'unknown',
+          projectPath: cwd,
+          projectName,
           startTime,
           endTime: stat.mtime,
           filePath: fullPath,
@@ -87,6 +95,29 @@ function scanSessionDir(dir: string, filter: SessionFilter | undefined, sessions
       continue
     }
   }
+}
+
+/**
+ * Read the first line of a Codex JSONL file to extract cwd from session_meta event.
+ */
+function extractCwdFromFirstLine(filePath: string): { cwd: string; projectName: string } {
+  try {
+    const content = readFileSync(filePath, 'utf-8')
+    const firstNewline = content.indexOf('\n')
+    const firstLine = firstNewline === -1 ? content : content.slice(0, firstNewline)
+    if (!firstLine.trim()) return { cwd: '', projectName: 'unknown' }
+
+    const event = JSON.parse(firstLine) as { type?: string; payload?: { cwd?: string } }
+    if (event.type === 'session_meta' && event.payload?.cwd) {
+      const cwd = event.payload.cwd
+      const parts = cwd.split('/')
+      const name = parts[parts.length - 1] || parts[parts.length - 2] || 'unknown'
+      return { cwd, projectName: name }
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return { cwd: '', projectName: 'unknown' }
 }
 
 /**

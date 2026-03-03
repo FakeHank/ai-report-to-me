@@ -260,12 +260,31 @@ async function runInteractive(_opts: InstallOpts) {
 
 async function installHooks(registry: ReturnType<typeof getRegistry>, sources: string[]) {
   console.log()
+  const detectResults = await registry.detectAll()
+  const detectMap = new Map(detectResults.map((r) => [r.name, r]))
+
   for (const source of sources) {
     const adapter = registry.getAdapter(source)
+    const detect = detectMap.get(source)
+    const hookSupport = detect?.hookSupport || 'none'
+
+    if (hookSupport === 'none') {
+      logger.info(`${source}: no hook support. Reports are generated from session data directly.`)
+      continue
+    }
+
     if (adapter?.installHook) {
       try {
         await adapter.installHook()
-        logger.success(`Hook installed for ${source}`)
+        if (hookSupport === 'full') {
+          logger.success(`Hook installed for ${source} (startup check on session start)`)
+        } else {
+          const limitations: Record<string, string> = {
+            'opencode': 'custom tool only — invoke ai_report_check manually in chat',
+          }
+          const detail = limitations[source] || 'limited hook support'
+          logger.success(`Hook installed for ${source} (partial: ${detail})`)
+        }
       } catch (e) {
         logger.warn(`Failed to install hook for ${source}: ${e instanceof Error ? e.message : e}`)
       }

@@ -9,7 +9,7 @@ import { dailyCommand, saveDailyCommand } from './commands/daily.js'
 import { wrappedCommand, saveWrappedCommand } from './commands/wrapped.js'
 import { installCommand } from './commands/install.js'
 import { uninstallCommand } from './commands/uninstall.js'
-import { logSessionCommand } from './commands/log-session.js'
+
 import { startupCheckCommand } from './commands/startup-check.js'
 import { regenVibeCardCommand } from './commands/regen-vibe-card.js'
 
@@ -50,7 +50,7 @@ program.addCommand(wrappedCommand)
 program.addCommand(saveWrappedCommand)
 program.addCommand(installCommand)
 program.addCommand(uninstallCommand)
-program.addCommand(logSessionCommand)
+
 program.addCommand(startupCheckCommand)
 program.addCommand(regenVibeCardCommand)
 

@@ -52,12 +52,6 @@ export interface SessionStats {
   errorCount: number
 }
 
-export interface SessionLogEntry {
-  sessionId: string
-  cli: string
-  projectPath: string
-  timestamp: string
-}
 
 export interface ReportMeta {
   generatedAt: string

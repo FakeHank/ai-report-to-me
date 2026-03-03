@@ -45,7 +45,7 @@ export const startupCheckCommand = new Command('startup-check')
 
     if (!yesterdayReportExists) {
       // Count yesterday's sessions by scanning actual session files via adapters
-      const yesterdaySessionCount = await countSessionsForDate(yesterday)
+      const yesterdaySessionCount = await countSessionsForDate(yesterday, config.sources)
       if (yesterdaySessionCount > 0) {
         output.push(tf('startup.yesterdayPending', lang, { count: yesterdaySessionCount }))
         output.push('')
@@ -80,9 +80,9 @@ export const startupCheckCommand = new Command('startup-check')
     }
   })
 
-async function countSessionsForDate(date: string): Promise<number> {
+async function countSessionsForDate(date: string, sources: string[]): Promise<number> {
   const registry = getRegistry()
-  const adapters = await registry.getEnabledAdapters()
+  const adapters = await registry.getConfiguredAdapters(sources)
   let count = 0
   const since = new Date(`${date}T00:00:00`)
   const until = new Date(`${date}T23:59:59`)

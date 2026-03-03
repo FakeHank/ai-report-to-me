@@ -4,13 +4,14 @@ import type { CLIAdapter, DetectResult, SessionFilter, SessionMeta } from '../ad
 import type { NormalizedSession } from '../../shared/types.js'
 import { OPENCODE_DB_PATH } from '../../shared/constants.js'
 import { parseOpenCodeMessages, type OpenCodeSessionInfo } from './parser.js'
+import { installHook, uninstallHook, checkHookStatus } from './hook.js'
 
 export class OpenCodeAdapter implements CLIAdapter {
   readonly name = 'opencode'
 
   async detect(): Promise<DetectResult> {
     if (!existsSync(OPENCODE_DB_PATH)) {
-      return { name: this.name, installed: false, dataPath: null, sessionCount: 0, hookSupport: 'none' }
+      return { name: this.name, installed: false, dataPath: null, sessionCount: 0, hookSupport: 'partial' }
     }
 
     let sessionCount = 0
@@ -28,7 +29,7 @@ export class OpenCodeAdapter implements CLIAdapter {
       installed: true,
       dataPath: OPENCODE_DB_PATH,
       sessionCount,
-      hookSupport: 'none',
+      hookSupport: 'partial',
     }
   }
 
@@ -151,6 +152,10 @@ export class OpenCodeAdapter implements CLIAdapter {
       db.close()
     }
   }
+
+  installHook = installHook
+  uninstallHook = uninstallHook
+  checkHookStatus = checkHookStatus
 }
 
 function extractProjectName(projectPath: string): string {

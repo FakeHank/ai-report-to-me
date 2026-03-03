@@ -5,7 +5,7 @@ export const HOME_DIR = homedir()
 
 export const AI_REPORT_DIR = join(HOME_DIR, '.ai-report')
 export const CONFIG_PATH = join(AI_REPORT_DIR, 'config.json')
-export const SESSION_LOG_PATH = join(AI_REPORT_DIR, 'session-log.jsonl')
+
 export const REPORTS_DIR = join(AI_REPORT_DIR, 'reports')
 export const WRAPPED_DIR = join(AI_REPORT_DIR, 'wrapped')
 

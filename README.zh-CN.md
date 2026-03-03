@@ -21,7 +21,7 @@
 - **每日报告** — 结构化总结今天做了什么、遇到了什么问题、学到了什么。包含"经验切片"：提炼出的问题解决故事，附带可迁移的认知。
 - **90 天 Wrapped** — 类 Spotify Wrapped 的阶段性回顾，含 session 统计、小时级活跃热力图、Top 项目排行、"Vibe Coder"人格分类（如 *深夜幽灵型*、*闪现游击型*、*重构上瘾型*）。
 - **摩擦检测** — 自动识别 session 中的重试循环、错误连锁和方向反复横跳。
-- **启动提醒** — Claude Code 启动时自动提示生成昨日报告。
+- **启动提醒** — Claude Code 的 SessionStart hook 自动提示生成昨日报告。OpenCode 通过自定义 `ai_report_check` tool 在聊天中手动查看。
 - **Webhook 推送** — 报告推送到 Slack、Discord、飞书、钉钉、企业微信、Microsoft Teams。
 - **多语言** — 报告语言支持英文、中文、日文、韩文、俄文。
 
@@ -76,12 +76,12 @@ aireport wrapped          # 90 天 Wrapped 总结
 
 ## 支持的 CLI 工具
 
-| CLI 工具 | 数据来源 | 状态 |
-|---|---|---|
-| [Claude Code](https://claude.ai/code) | `~/.claude/projects/` | 完整支持 |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `~/.gemini/tmp/` | 已支持 |
-| [OpenCode](https://github.com/opencode-ai/opencode) | `~/.local/share/opencode/opencode.db` | 已支持 |
-| [Codex](https://github.com/openai/codex) | `~/.codex/sessions/` | 已支持 |
+| CLI 工具 | 数据来源 | Hook 支持 | 说明 |
+|---|---|---|---|
+| [Claude Code](https://claude.ai/code) | `~/.claude/projects/` | 完整 | SessionStart hook（启动检查） |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `~/.gemini/tmp/` | 无 | 直接读取 session 数据 |
+| [OpenCode](https://github.com/opencode-ai/opencode) | `~/.local/share/opencode/opencode.db` | 部分 | Plugin 自定义 `ai_report_check` tool |
+| [Codex](https://github.com/openai/codex) | `~/.codex/sessions/` | 无 | 直接读取 session 数据 |
 
 ## CLI 命令参考
 

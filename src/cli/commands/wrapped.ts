@@ -30,7 +30,7 @@ export const wrappedCommand = new Command('wrapped')
   .action(async (opts: { days: string; dryRun?: boolean; promptOnly?: boolean }) => {
     const config = loadConfig()
     const registry = getRegistry()
-    const adapters = await registry.getEnabledAdapters()
+    const adapters = await registry.getConfiguredAdapters(config.sources)
 
     if (adapters.length === 0) {
       logger.error('No CLI adapters detected. Run `aireport install` first.')
@@ -147,7 +147,7 @@ export const saveWrappedCommand = new Command('save-wrapped')
       const vibeInfo = parseVibeType(content)
       if (vibeInfo) {
         const registry = getRegistry()
-        const adapters = await registry.getEnabledAdapters()
+        const adapters = await registry.getConfiguredAdapters(config.sources)
         const days = dayjs(endDate).diff(dayjs(startDate), 'day') + 1
         const since = dayjs(startDate).startOf('day').toDate()
         const reader = new SessionReader(adapters)

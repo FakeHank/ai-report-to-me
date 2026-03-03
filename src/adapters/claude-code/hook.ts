@@ -23,14 +23,12 @@ interface HookEntry {
 
 interface ClaudeSettings {
   hooks?: {
-    SessionEnd?: HookEntry[]
     SessionStart?: HookEntry[]
     [key: string]: unknown
   }
   [key: string]: unknown
 }
 
-const LOG_SUFFIX = 'log-session --cli claude-code'
 const STARTUP_SUFFIX = 'startup-check'
 
 function hasAireportHook(entries: HookEntry[] | undefined, suffix: string): boolean {
@@ -53,20 +51,6 @@ export async function installHook(): Promise<void> {
     settings.hooks = {}
   }
 
-  let changed = false
-
-  // Install SessionEnd hook for session logging
-  if (!settings.hooks.SessionEnd) {
-    settings.hooks.SessionEnd = []
-  }
-  if (!hasAireportHook(settings.hooks.SessionEnd, LOG_SUFFIX)) {
-    settings.hooks.SessionEnd.push({
-      matcher: '*',
-      hooks: [{ type: 'command', command: `${bin} ${LOG_SUFFIX}` }],
-    })
-    changed = true
-  }
-
   // Install SessionStart hook for startup context
   if (!settings.hooks.SessionStart) {
     settings.hooks.SessionStart = []
@@ -76,10 +60,6 @@ export async function installHook(): Promise<void> {
       matcher: '*',
       hooks: [{ type: 'command', command: `${bin} ${STARTUP_SUFFIX}` }],
     })
-    changed = true
-  }
-
-  if (changed) {
     writeSettings(settings)
   }
 }
@@ -88,13 +68,6 @@ export async function uninstallHook(): Promise<void> {
   if (!existsSync(CLAUDE_SETTINGS_PATH)) return
 
   const settings = readSettings()
-
-  if (settings.hooks?.SessionEnd) {
-    settings.hooks.SessionEnd = removeAireportHook(settings.hooks.SessionEnd, LOG_SUFFIX)
-    if (settings.hooks.SessionEnd.length === 0) {
-      delete settings.hooks.SessionEnd
-    }
-  }
 
   if (settings.hooks?.SessionStart) {
     settings.hooks.SessionStart = removeAireportHook(settings.hooks.SessionStart, STARTUP_SUFFIX)
@@ -108,16 +81,15 @@ export async function uninstallHook(): Promise<void> {
 
 export async function checkHookStatus(): Promise<HookStatus> {
   if (!existsSync(CLAUDE_SETTINGS_PATH)) {
-    return { installed: false, hookType: 'SessionEnd+SessionStart', configPath: CLAUDE_SETTINGS_PATH }
+    return { installed: false, hookType: 'SessionStart', configPath: CLAUDE_SETTINGS_PATH }
   }
 
   const settings = readSettings()
-  const sessionEndInstalled = hasAireportHook(settings.hooks?.SessionEnd, LOG_SUFFIX)
-  const startupInstalled = hasAireportHook(settings.hooks?.SessionStart, STARTUP_SUFFIX)
+  const installed = hasAireportHook(settings.hooks?.SessionStart, STARTUP_SUFFIX)
 
   return {
-    installed: sessionEndInstalled && startupInstalled,
-    hookType: 'SessionEnd+SessionStart',
+    installed,
+    hookType: 'SessionStart',
     configPath: CLAUDE_SETTINGS_PATH,
   }
 }
