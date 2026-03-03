@@ -11,74 +11,82 @@ import { t, tf } from '../../shared/i18n.js'
 export const startupCheckCommand = new Command('startup-check')
   .description('Session startup context check (called by SessionStart hook)')
   .action(async () => {
-    const config = loadConfig()
-    const lang = config.output_lang
-
-    // If sources not configured yet, remind user to run install wizard
-    if (config.sources.length === 0) {
-      const msg = t('startup.notConfigured', lang)
-      process.stdout.write(msg)
-      process.stderr.write(msg)
-      return
-    }
-
-    if (!config.daily_reminder) return
-
-    // Read stdin for session info (SessionStart hook provides session_id, cwd, etc.)
-    let cwd = process.cwd()
     try {
-      const stdinData = await readStdin()
-      if (stdinData.cwd) cwd = stdinData.cwd as string
+      await runStartupCheck()
     } catch {
-      // ignore stdin errors
-    }
-
-    const today = dayjs().format('YYYY-MM-DD')
-    const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
-    const projectName = basename(cwd)
-
-    const output: string[] = []
-
-    // Check yesterday's report
-    const yesterdayReportPath = join(REPORTS_DIR, `${yesterday}.md`)
-    const yesterdayReportExists = existsSync(yesterdayReportPath)
-
-    if (!yesterdayReportExists) {
-      // Count yesterday's sessions by scanning actual session files via adapters
-      const yesterdaySessionCount = await countSessionsForDate(yesterday, config.sources)
-      if (yesterdaySessionCount > 0) {
-        output.push(tf('startup.yesterdayPending', lang, { count: yesterdaySessionCount }))
-        output.push('')
-      }
-    }
-
-    // Extract project-relevant sections from reports
-    const yesterdayContext = yesterdayReportExists
-      ? extractProjectSection(yesterdayReportPath, projectName)
-      : null
-    const todayReportPath = join(REPORTS_DIR, `${today}.md`)
-    const todayContext = existsSync(todayReportPath)
-      ? extractProjectSection(todayReportPath, projectName)
-      : null
-
-    if (yesterdayContext) {
-      output.push(tf('startup.yesterdayReport', lang, { date: yesterday, project: projectName }))
-      output.push(yesterdayContext)
-      output.push('')
-    }
-
-    if (todayContext) {
-      output.push(tf('startup.todayReport', lang, { date: today, project: projectName }))
-      output.push(todayContext)
-      output.push('')
-    }
-
-    if (output.length > 0) {
-      const text = output.join('\n')
-      process.stdout.write(text)
-      process.stderr.write(text + '\n')
+      // Silently exit on any unexpected error to avoid polluting Claude Code session output
     }
   })
+
+async function runStartupCheck() {
+  const config = loadConfig()
+  const lang = config.output_lang
+
+  // If sources not configured yet, remind user to run install wizard
+  if (config.sources.length === 0) {
+    const msg = t('startup.notConfigured', lang)
+    process.stdout.write(msg)
+    process.stderr.write(msg)
+    return
+  }
+
+  if (!config.daily_reminder) return
+
+  // Read stdin for session info (SessionStart hook provides session_id, cwd, etc.)
+  let cwd = process.cwd()
+  try {
+    const stdinData = await readStdin()
+    if (stdinData.cwd) cwd = stdinData.cwd as string
+  } catch {
+    // ignore stdin errors
+  }
+
+  const today = dayjs().format('YYYY-MM-DD')
+  const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
+  const projectName = basename(cwd)
+
+  const output: string[] = []
+
+  // Check yesterday's report
+  const yesterdayReportPath = join(REPORTS_DIR, `${yesterday}.md`)
+  const yesterdayReportExists = existsSync(yesterdayReportPath)
+
+  if (!yesterdayReportExists) {
+    // Count yesterday's sessions by scanning actual session files via adapters
+    const yesterdaySessionCount = await countSessionsForDate(yesterday, config.sources)
+    if (yesterdaySessionCount > 0) {
+      output.push(tf('startup.yesterdayPending', lang, { count: yesterdaySessionCount }))
+      output.push('')
+    }
+  }
+
+  // Extract project-relevant sections from reports
+  const yesterdayContext = yesterdayReportExists
+    ? extractProjectSection(yesterdayReportPath, projectName)
+    : null
+  const todayReportPath = join(REPORTS_DIR, `${today}.md`)
+  const todayContext = existsSync(todayReportPath)
+    ? extractProjectSection(todayReportPath, projectName)
+    : null
+
+  if (yesterdayContext) {
+    output.push(tf('startup.yesterdayReport', lang, { date: yesterday, project: projectName }))
+    output.push(yesterdayContext)
+    output.push('')
+  }
+
+  if (todayContext) {
+    output.push(tf('startup.todayReport', lang, { date: today, project: projectName }))
+    output.push(todayContext)
+    output.push('')
+  }
+
+  if (output.length > 0) {
+    const text = output.join('\n')
+    process.stdout.write(text)
+    process.stderr.write(text + '\n')
+  }
+}
 
 async function countSessionsForDate(date: string, sources: string[]): Promise<number> {
   const registry = getRegistry()

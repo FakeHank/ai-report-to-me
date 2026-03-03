@@ -9,7 +9,6 @@ interface InstallOpts {
   yes?: boolean
   lang?: string
   sources?: string[]
-  wrappedDays?: string
   slackUrl?: string
   discordUrl?: string
   feishuUrl?: string
@@ -23,7 +22,6 @@ export const installCommand = new Command('install')
   .option('-y, --yes', 'Non-interactive mode: auto-detect sources, use defaults')
   .option('--lang <lang>', `Report language (${VALID_LANGS.join(', ')})`)
   .option('--sources <sources...>', 'Data sources to enable (e.g. claude-code gemini-cli)')
-  .option('--wrapped-days <days>', 'Initial Wrapped report period in days (0 to skip)')
   .option('--slack-url <url>', 'Slack webhook URL')
   .option('--discord-url <url>', 'Discord webhook URL')
   .option('--feishu-url <url>', 'Feishu/Lark webhook URL')
@@ -83,9 +81,6 @@ async function runNonInteractive(opts: InstallOpts) {
     : 'en'
   logger.info(`Language: ${lang}`)
 
-  // Resolve wrapped days
-  const wrappedDays = opts.wrappedDays !== undefined ? parseInt(opts.wrappedDays) || 0 : 90
-
   // Resolve webhook URLs
   const webhooks: Record<string, string> = {}
   if (opts.slackUrl) webhooks.slack_url = opts.slackUrl
@@ -106,7 +101,6 @@ async function runNonInteractive(opts: InstallOpts) {
     output_lang: lang,
     sources: selectedSources,
     daily_reminder: true,
-    wrapped_days: wrappedDays || 90,
     webhooks: { ...loadConfig().webhooks, ...webhooks },
   }
 
@@ -118,15 +112,7 @@ async function runNonInteractive(opts: InstallOpts) {
 
   console.log()
   logger.success('Setup complete!')
-  logger.info('Run `aireport status` to verify.')
-
-  // Generate wrapped if requested
-  if (wrappedDays > 0) {
-    await tryGenerateWrapped(wrappedDays)
-  }
-
-  logger.info('To generate daily reports, run:')
-  logger.bold('  aireport daily')
+  printNextSteps()
 }
 
 async function runInteractive(_opts: InstallOpts) {
@@ -174,20 +160,7 @@ async function runInteractive(_opts: InstallOpts) {
     .reduce((sum, r) => sum + r.sessionCount, 0)
   logger.info(`Found ${totalSessions} total sessions across ${selectedSources.length} source(s)`)
 
-  // Step 4: Wrapped time range
-  const rangeAnswer = await prompt<{ range: string }>({
-    type: 'select',
-    name: 'range',
-    message: 'Generate initial Wrapped report?',
-    choices: [
-      { name: '90', message: '90 days (Recommended)' },
-      { name: '30', message: '30 days' },
-      { name: '365', message: '365 days' },
-      { name: '0', message: 'Skip for now' },
-    ],
-  })
-
-  // Step 5: Daily reminder
+  // Step 4: Daily reminder
   const reminderAnswer = await prompt<{ reminder: boolean }>({
     type: 'confirm',
     name: 'reminder',
@@ -195,7 +168,7 @@ async function runInteractive(_opts: InstallOpts) {
     initial: true,
   } as any)
 
-  // Step 6: Configure webhooks
+  // Step 5: Configure webhooks
   const webhookAnswer = await prompt<{ configure: boolean }>({
     type: 'confirm',
     name: 'configure',
@@ -235,7 +208,6 @@ async function runInteractive(_opts: InstallOpts) {
     output_lang: langAnswer.lang as Config['output_lang'],
     sources: selectedSources,
     daily_reminder: reminderAnswer.reminder,
-    wrapped_days: parseInt(rangeAnswer.range) || 90,
     webhooks: { ...loadConfig().webhooks, ...webhooks },
   }
 
@@ -247,15 +219,7 @@ async function runInteractive(_opts: InstallOpts) {
 
   console.log()
   logger.success('Setup complete!')
-  logger.info('Run `aireport status` to verify.')
-
-  if (rangeAnswer.range !== '0') {
-    const days = parseInt(rangeAnswer.range) || 90
-    await tryGenerateWrapped(days)
-  }
-
-  logger.info('To generate daily reports, run:')
-  logger.bold('  aireport daily')
+  printNextSteps()
 }
 
 async function installHooks(registry: ReturnType<typeof getRegistry>, sources: string[]) {
@@ -292,23 +256,12 @@ async function installHooks(registry: ReturnType<typeof getRegistry>, sources: s
   }
 }
 
-async function tryGenerateWrapped(days: number) {
+function printNextSteps() {
   console.log()
-  logger.info(`Generating your ${days}-day Wrapped report...`)
-  try {
-    const { execFileSync } = await import('node:child_process')
-    execFileSync(process.execPath, [...process.execArgv, ...getAireportArgs(), 'wrapped', '--days', String(days), '--prompt-only'], {
-      stdio: 'inherit',
-      env: process.env,
-    })
-  } catch {
-    logger.warn('Auto-generation failed. You can run it manually:')
-    logger.bold(`  aireport wrapped --days ${days}`)
-  }
-}
-
-function getAireportArgs(): string[] {
-  const script = process.argv[1]
-  if (script) return [script]
-  return []
+  logger.info('Next steps:')
+  logger.info('  Open your coding CLI (Claude Code, OpenCode, Codex, etc.) and type:')
+  logger.bold('    /dayreport    — generate a daily report')
+  logger.bold('    /qtreport     — generate a 90-day Wrapped summary')
+  console.log()
+  logger.dim('  Or run from terminal:  aireport status')
 }
