@@ -38,12 +38,13 @@ check_node() {
 }
 
 detect_pm() {
-  if command -v pnpm &>/dev/null; then
+  # Prefer npm (ships with Node.js, most reliable for global installs)
+  if command -v npm &>/dev/null; then
+    echo "npm"
+  elif command -v pnpm &>/dev/null; then
     echo "pnpm"
   elif command -v yarn &>/dev/null; then
     echo "yarn"
-  elif command -v npm &>/dev/null; then
-    echo "npm"
   else
     error "No package manager found (npm/yarn/pnpm)."
     exit 1
