@@ -1,4 +1,5 @@
 import type { NormalizedSession, FrictionRecord } from '../../shared/types.js'
+import { t, tf } from '../../shared/i18n.js'
 
 export interface Improvement {
   title: string
@@ -8,7 +9,8 @@ export interface Improvement {
 
 export function generateImprovements(
   sessions: NormalizedSession[],
-  frictions: FrictionRecord[]
+  frictions: FrictionRecord[],
+  lang = 'en'
 ): Improvement[] {
   const improvements: Improvement[] = []
 
@@ -19,9 +21,9 @@ export function generateImprovements(
   })
   if (bashEndSessions.length > sessions.length * 0.3 && bashEndSessions.length >= 3) {
     improvements.push({
-      title: 'Premature session endings',
-      observation: `${bashEndSessions.length} sessions ended with a Bash command, suggesting you often discover new issues at the end.`,
-      suggestion: 'Before wrapping up, ask AI "is there anything I missed?" to catch loose ends.',
+      title: t('improvements.prematureEndings.title', lang),
+      observation: tf('improvements.prematureEndings.observation', lang, { count: bashEndSessions.length }),
+      suggestion: t('improvements.prematureEndings.suggestion', lang),
     })
   }
 
@@ -29,9 +31,9 @@ export function generateImprovements(
   const retryFrictions = frictions.filter((f) => f.type === 'retry')
   if (retryFrictions.length >= 5) {
     improvements.push({
-      title: 'Repeated debugging loops',
-      observation: `${retryFrictions.length} instances of editing the same file 3+ times in a session.`,
-      suggestion: 'Consider asking AI to explain the root cause before attempting fixes.',
+      title: t('improvements.debuggingLoops.title', lang),
+      observation: tf('improvements.debuggingLoops.observation', lang, { count: retryFrictions.length }),
+      suggestion: t('improvements.debuggingLoops.suggestion', lang),
     })
   }
 
@@ -43,9 +45,13 @@ export function generateImprovements(
     const dayAvgDuration = daySessions.reduce((s, sess) => s + sess.durationMinutes, 0) / daySessions.length
     if (nightAvgDuration < dayAvgDuration * 0.6) {
       improvements.push({
-        title: 'Late night sessions are less productive',
-        observation: `Sessions after 11pm average ${Math.round(nightAvgDuration)}min vs ${Math.round(dayAvgDuration)}min during the day (${Math.round((1 - nightAvgDuration / dayAvgDuration) * 100)}% shorter).`,
-        suggestion: 'Avoid starting complex tasks late at night.',
+        title: t('improvements.lateNight.title', lang),
+        observation: tf('improvements.lateNight.observation', lang, {
+          nightMin: Math.round(nightAvgDuration),
+          dayMin: Math.round(dayAvgDuration),
+          pctDrop: Math.round((1 - nightAvgDuration / dayAvgDuration) * 100),
+        }),
+        suggestion: t('improvements.lateNight.suggestion', lang),
       })
     }
   }
@@ -55,9 +61,13 @@ export function generateImprovements(
   const totalErrors = sessions.reduce((sum, s) => sum + s.stats.errorCount, 0)
   if (totalToolCalls > 50 && totalErrors / totalToolCalls > 0.1) {
     improvements.push({
-      title: 'High tool error rate',
-      observation: `${totalErrors} tool errors out of ${totalToolCalls} calls (${Math.round(totalErrors / totalToolCalls * 100)}%).`,
-      suggestion: 'Review common error patterns — often they stem from stale context or incorrect assumptions.',
+      title: t('improvements.highErrorRate.title', lang),
+      observation: tf('improvements.highErrorRate.observation', lang, {
+        errors: totalErrors,
+        total: totalToolCalls,
+        pct: Math.round(totalErrors / totalToolCalls * 100),
+      }),
+      suggestion: t('improvements.highErrorRate.suggestion', lang),
     })
   }
 

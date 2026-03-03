@@ -3,6 +3,7 @@ import type { HabitsAnalysis } from '../analyzer/habits.js'
 import type { VibeSignals } from '../analyzer/vibe-coder-type.js'
 import type { Improvement } from '../analyzer/improvements.js'
 import type { DailySlice } from '../daily-slices-extractor.js'
+import { t, tf } from '../../shared/i18n.js'
 
 export function buildWrappedReportPrompt(
   aggregation: WrappedAggregation,
@@ -105,7 +106,7 @@ Each paragraph should be 2-4 sentences. Mention specific projects, peak periods,
 
 A table with key metrics: total sessions, total messages, total tokens, average session duration, longest session, active days, top 3 tool calls, CLI distribution.
 
-If \`hasNonTokenCli\` is true, add a footnote below the table: "* Token 消耗数仅反映 ${tokenSource.length > 0 ? tokenSource.join(' / ') : 'N/A'} 的数据，其他 CLI 不提供 token 统计。"
+If \`hasNonTokenCli\` is true, add a footnote below the table: "${tf('wrapped.tokenFootnote', lang, { source: tokenSource.length > 0 ? tokenSource.join(' / ') : 'N/A' })}"
 
 ### Section 3: Project Map
 
@@ -164,11 +165,9 @@ Here are the signal metrics to analyze:
 - \`totalEdits\`: ${vibeSignals.totalEdits}
 - \`totalToolCalls\`: ${vibeSignals.totalToolCalls}
 
-**Inspiration examples** (feel free to invent your own): "深夜幽灵型"、"反复横跳型"、"闪现游击型"、"砌墙专家型"、"话痨驱动型"、"重构上瘾型"
+**Inspiration examples** (feel free to invent your own): ${t('wrapped.vibeExamples', lang)}
 
-**Format requirement**: Start the section body with exactly this format on the first line:
-\`**[emoji] [类型名称]**\`
-For example: \`**🌙 深夜幽灵型**\` or \`**⚡ 闪电迭代者**\`
+${t('wrapped.vibeFormatRequirement', lang)}
 
 Then write a roast/monologue from the AI's first-person perspective. It should be:
 - Witty and slightly mean (but affectionate)

@@ -44,6 +44,14 @@ Output targets implementing `OutputTarget` interface (currently local file).
 ### CLI (`src/cli/`)
 Commander-based CLI with subcommands: `status`, `config`, `daily`, `wrapped`, `install`, `uninstall`, `log-session`.
 
+## Publishing
+
+1. Bump version in `package.json`
+2. `pnpm build`
+3. `npm publish --registry=https://registry.npmjs.org --access public --//registry.npmjs.org/:_authToken=$NPM_PUBLISH_TOKEN`
+
+Note: Default registry in `~/.npmrc` points to npmmirror, so `--registry` is required. The token is a granular access token with 2FA bypass (no OTP needed), stored in auto memory, not in the repo.
+
 ## Key Conventions
 
 - ESM-only (`"type": "module"` in package.json), all imports use `.js` extensions

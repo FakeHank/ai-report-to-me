@@ -1,8 +1,12 @@
 import { Command } from 'commander'
+import { createRequire } from 'node:module'
 import { statusCommand } from './commands/status.js'
+
+const require = createRequire(import.meta.url)
+const { version } = require('../../package.json')
 import { configCommand } from './commands/config.js'
 import { dailyCommand, saveDailyCommand } from './commands/daily.js'
-import { wrappedCommand } from './commands/wrapped.js'
+import { wrappedCommand, saveWrappedCommand } from './commands/wrapped.js'
 import { installCommand } from './commands/install.js'
 import { uninstallCommand } from './commands/uninstall.js'
 import { logSessionCommand } from './commands/log-session.js'
@@ -14,7 +18,7 @@ const program = new Command()
 program
   .name('aireport')
   .description('AI-powered daily reports and wrapped summaries from your coding CLI sessions')
-  .version('0.1.0')
+  .version(version)
   .addHelpText('after', `
 Getting Started:
   1. Run "aireport install" to detect CLI tools and configure settings
@@ -43,6 +47,7 @@ program.addCommand(configCommand)
 program.addCommand(dailyCommand)
 program.addCommand(saveDailyCommand)
 program.addCommand(wrappedCommand)
+program.addCommand(saveWrappedCommand)
 program.addCommand(installCommand)
 program.addCommand(uninstallCommand)
 program.addCommand(logSessionCommand)

@@ -2,6 +2,7 @@ import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
 import { readFileSync, existsSync } from 'node:fs'
 import { execSync } from 'node:child_process'
+import { t } from '../../shared/i18n.js'
 
 export interface VibeCardOptions {
   emoji: string
@@ -16,6 +17,8 @@ export interface VibeCardOptions {
   }
   /** LLM-generated Section 7 commentary (the roast/monologue) */
   commentary?: string
+  /** Language for stat labels */
+  lang?: string
 }
 
 // Preset gradient color palette — selected by hashing the label string
@@ -97,7 +100,7 @@ function h(type: string, props: Record<string, unknown>, ...children: (string | 
 }
 
 function buildCard(options: VibeCardOptions): SatoriNode {
-  const { reason, periodLabel, stats, commentary } = options
+  const { reason, periodLabel, stats, commentary, lang = 'en' } = options
   const label = stripEmoji(options.label)
   const colorIndex = hashString(label) % COLOR_PALETTE.length
   const [color1, color2] = COLOR_PALETTE[colorIndex]
@@ -105,10 +108,10 @@ function buildCard(options: VibeCardOptions): SatoriNode {
   const topProject = stats.topProject.length > 18 ? stats.topProject.slice(0, 16) + '...' : stats.topProject
 
   const statItems = [
-    { value: String(stats.totalSessions), unit: 'sessions' },
-    { value: `${stats.totalHours}h`, unit: 'coding' },
-    { value: String(stats.activeDays), unit: 'active days' },
-    { value: topProject, unit: 'top project' },
+    { value: String(stats.totalSessions), unit: t('vibeCard.sessions', lang) },
+    { value: `${stats.totalHours}h`, unit: t('vibeCard.coding', lang) },
+    { value: String(stats.activeDays), unit: t('vibeCard.activeDays', lang) },
+    { value: topProject, unit: t('vibeCard.topProject', lang) },
   ]
 
   return h('div', {

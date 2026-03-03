@@ -145,30 +145,15 @@ async function runInteractive(_opts: InstallOpts) {
     return
   }
 
-  // Step 1: Show detected CLIs
+  // Step 1: Show detected CLIs and use all as sources
   logger.info('Detected CLI tools:')
   for (const r of detected) {
     logger.success(`  ${r.name}: ${r.sessionCount} sessions`)
   }
   console.log()
+  const selectedSources = detected.map((r) => r.name)
 
-  // Step 2: Select data sources
-  const sourceChoices = detected.map((r) => ({
-    name: r.name,
-    message: `${r.name} (${r.sessionCount} sessions)`,
-    value: r.name,
-  }))
-
-  const sourceAnswer = await prompt<{ sources: string[] }>({
-    type: 'multiselect',
-    name: 'sources',
-    message: 'Select data sources:',
-    choices: sourceChoices,
-    initial: sourceChoices.map((_, i) => i),
-  } as any)
-  const selectedSources = sourceAnswer.sources
-
-  // Step 3: Select language
+  // Step 2: Select language
   const langAnswer = await prompt<{ lang: string }>({
     type: 'select',
     name: 'lang',
@@ -182,14 +167,14 @@ async function runInteractive(_opts: InstallOpts) {
     ],
   })
 
-  // Step 4: Preview data
+  // Step 3: Preview data
   console.log()
   const totalSessions = detected
     .filter((r) => selectedSources.includes(r.name))
     .reduce((sum, r) => sum + r.sessionCount, 0)
   logger.info(`Found ${totalSessions} total sessions across ${selectedSources.length} source(s)`)
 
-  // Step 5: Wrapped time range
+  // Step 4: Wrapped time range
   const rangeAnswer = await prompt<{ range: string }>({
     type: 'select',
     name: 'range',
@@ -202,7 +187,7 @@ async function runInteractive(_opts: InstallOpts) {
     ],
   })
 
-  // Step 6: Daily reminder
+  // Step 5: Daily reminder
   const reminderAnswer = await prompt<{ reminder: boolean }>({
     type: 'confirm',
     name: 'reminder',
@@ -210,7 +195,7 @@ async function runInteractive(_opts: InstallOpts) {
     initial: true,
   } as any)
 
-  // Step 7: Configure webhooks
+  // Step 6: Configure webhooks
   const webhookAnswer = await prompt<{ configure: boolean }>({
     type: 'confirm',
     name: 'configure',

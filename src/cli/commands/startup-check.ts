@@ -6,15 +6,17 @@ import { loadConfig } from '../../shared/config.js'
 import { REPORTS_DIR } from '../../shared/constants.js'
 import { readMarkdown } from '../../shared/storage.js'
 import { getRegistry } from '../../adapters/registry.js'
+import { t, tf } from '../../shared/i18n.js'
 
 export const startupCheckCommand = new Command('startup-check')
   .description('Session startup context check (called by SessionStart hook)')
   .action(async () => {
     const config = loadConfig()
+    const lang = config.output_lang
 
     // If sources not configured yet, remind user to run install wizard
     if (config.sources.length === 0) {
-      const msg = '[AI Report] aireport 尚未配置。请运行 `aireport install` 进行初始设置（选择数据源、语言等）。\n'
+      const msg = t('startup.notConfigured', lang)
       process.stdout.write(msg)
       process.stderr.write(msg)
       return
@@ -45,7 +47,7 @@ export const startupCheckCommand = new Command('startup-check')
       // Count yesterday's sessions by scanning actual session files via adapters
       const yesterdaySessionCount = await countSessionsForDate(yesterday)
       if (yesterdaySessionCount > 0) {
-        output.push(`[AI Report] 昨天有 ${yesterdaySessionCount} 个 session，日报尚未生成。输入 /dayreport 查看日报。`)
+        output.push(tf('startup.yesterdayPending', lang, { count: yesterdaySessionCount }))
         output.push('')
       }
     }
@@ -60,13 +62,13 @@ export const startupCheckCommand = new Command('startup-check')
       : null
 
     if (yesterdayContext) {
-      output.push(`[AI Report] 昨日日报 (${yesterday}) · ${projectName} 相关:`)
+      output.push(tf('startup.yesterdayReport', lang, { date: yesterday, project: projectName }))
       output.push(yesterdayContext)
       output.push('')
     }
 
     if (todayContext) {
-      output.push(`[AI Report] 今日日报 (${today}) · ${projectName} 相关:`)
+      output.push(tf('startup.todayReport', lang, { date: today, project: projectName }))
       output.push(todayContext)
       output.push('')
     }

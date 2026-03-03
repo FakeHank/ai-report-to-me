@@ -34,7 +34,6 @@ export const regenVibeCardCommand = new Command('regen-vibe-card')
     const commentary = extractSection7Body(markdown)
 
     // Re-run lightweight pipeline for stats
-    loadConfig() // ensure config is loaded
     const registry = getRegistry()
     const adapters = await registry.getEnabledAdapters()
 
@@ -57,6 +56,7 @@ export const regenVibeCardCommand = new Command('regen-vibe-card')
     const aggregation = aggregator.aggregateWrapped(sessions, days)
     const topProject = aggregation.projectBreakdown[0]?.project || 'N/A'
 
+    const config = loadConfig()
     try {
       const pngBuffer = await generateVibeCardPng({
         emoji: vibeInfo.emoji,
@@ -70,6 +70,7 @@ export const regenVibeCardCommand = new Command('regen-vibe-card')
           topProject,
         },
         commentary: commentary || undefined,
+        lang: config.output_lang,
       })
 
       ensureDir(WRAPPED_DIR)

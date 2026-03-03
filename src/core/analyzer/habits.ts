@@ -1,4 +1,5 @@
 import type { NormalizedSession } from '../../shared/types.js'
+import { t } from '../../shared/i18n.js'
 
 export interface HabitsAnalysis {
   collaborationStyle: 'directive' | 'delegative' | 'mixed'
@@ -10,10 +11,10 @@ export interface HabitsAnalysis {
   averageMessagesPerToolUse: number
 }
 
-export function analyzeHabits(sessions: NormalizedSession[]): HabitsAnalysis {
+export function analyzeHabits(sessions: NormalizedSession[], lang = 'en'): HabitsAnalysis {
   return {
     collaborationStyle: detectCollaborationStyle(sessions),
-    collaborationReason: getCollaborationReason(sessions),
+    collaborationReason: getCollaborationReason(sessions, lang),
     startupStyle: detectStartupStyle(sessions),
     endingStyle: detectEndingStyle(sessions),
     peakHours: detectPeakHours(sessions),
@@ -52,15 +53,15 @@ function detectCollaborationStyle(sessions: NormalizedSession[]): 'directive' | 
   return 'mixed'
 }
 
-function getCollaborationReason(sessions: NormalizedSession[]): string {
+function getCollaborationReason(sessions: NormalizedSession[], lang: string): string {
   const style = detectCollaborationStyle(sessions)
   switch (style) {
     case 'directive':
-      return 'Short commands, high-frequency interaction — you prefer to stay in control'
+      return t('habits.directive', lang)
     case 'delegative':
-      return 'Long prompts, low-frequency check-ins — you trust AI with larger chunks'
+      return t('habits.delegative', lang)
     case 'mixed':
-      return 'A mix of short directives and long delegations'
+      return t('habits.mixed', lang)
   }
 }
 

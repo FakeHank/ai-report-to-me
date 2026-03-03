@@ -3,14 +3,39 @@ import { dirname } from 'node:path'
 import { z } from 'zod'
 import { CONFIG_PATH, DEFAULT_BACKFILL_LIMIT } from './constants.js'
 
-const WebhookConfigSchema = z.object({
-  slack_url: z.string().url().optional(),
-  discord_url: z.string().url().optional(),
-  feishu_url: z.string().url().optional(),
-  dingtalk_url: z.string().url().optional(),
-  wecom_url: z.string().url().optional(),
-  teams_url: z.string().url().optional(),
-}).default({})
+// Accept both "feishu_url" and "feishu" style keys, normalize to *_url
+const RawWebhookSchema = z.record(z.string(), z.string()).default({})
+
+const WEBHOOK_ALIASES: Record<string, string> = {
+  slack: 'slack_url',
+  discord: 'discord_url',
+  feishu: 'feishu_url',
+  dingtalk: 'dingtalk_url',
+  wecom: 'wecom_url',
+  teams: 'teams_url',
+}
+
+const VALID_WEBHOOK_KEYS = new Set([
+  'slack_url', 'discord_url', 'feishu_url', 'dingtalk_url', 'wecom_url', 'teams_url',
+])
+
+const WebhookConfigSchema = RawWebhookSchema.transform((raw) => {
+  const normalized: Record<string, string> = {}
+  for (const [key, value] of Object.entries(raw)) {
+    const canonicalKey = WEBHOOK_ALIASES[key] || key
+    if (VALID_WEBHOOK_KEYS.has(canonicalKey) && value) {
+      normalized[canonicalKey] = value
+    }
+  }
+  return normalized as {
+    slack_url?: string
+    discord_url?: string
+    feishu_url?: string
+    dingtalk_url?: string
+    wecom_url?: string
+    teams_url?: string
+  }
+})
 
 const ConfigSchema = z.object({
   output_lang: z.enum(['en', 'zh', 'ru', 'ja', 'ko']).default('en'),
