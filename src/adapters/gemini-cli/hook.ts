@@ -22,17 +22,27 @@ export async function uninstallHook(): Promise<void> {
   if (existsSync(DAYREPORT_PATH)) unlinkSync(DAYREPORT_PATH)
   if (existsSync(QTREPORT_PATH)) unlinkSync(QTREPORT_PATH)
 
-  // Clean up any legacy aireport hooks from settings.json
+  // Clean up any legacy aireport hooks from settings.json (all hook types)
   if (!existsSync(GEMINI_SETTINGS_PATH)) return
   const settings = readSettings()
-  if (settings.hooks?.AfterAgent) {
-    settings.hooks.AfterAgent = settings.hooks.AfterAgent.filter(
-      (h: { command?: string }) => !h.command?.includes('aireport')
-    )
-    if (settings.hooks.AfterAgent.length === 0) {
-      delete settings.hooks.AfterAgent
+  if (settings.hooks) {
+    let changed = false
+    for (const hookType of Object.keys(settings.hooks)) {
+      const entries = settings.hooks[hookType]
+      if (!Array.isArray(entries)) continue
+      const cleaned = entries.filter(
+        (h: { command?: string }) => !h.command?.includes('aireport')
+      )
+      if (cleaned.length !== entries.length) {
+        changed = true
+        if (cleaned.length === 0) {
+          delete settings.hooks[hookType]
+        } else {
+          settings.hooks[hookType] = cleaned
+        }
+      }
     }
-    writeSettings(settings)
+    if (changed) writeSettings(settings)
   }
 }
 

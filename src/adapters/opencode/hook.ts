@@ -21,18 +21,39 @@ function resolveAireportBin(): string {
 
 function generatePluginSource(bin: string): string {
   return `import { tool } from "@opencode-ai/plugin";
-const plugin = async ({ $ }) => ({
-  tool: {
-    ai_report_check: tool({
-      description: "Show AI Report status: yesterday's pending reports and context for current project",
-      args: {},
-      async execute(_args, ctx) {
-        const result = await $\`${bin} startup-check\`.nothrow().quiet();
-        return result.stdout.toString() || "No pending reports.";
-      },
-    }),
-  },
-});
+const plugin = async ({ $ }) => {
+  let startupContext = "";
+  // Run startup check immediately so context is ready
+  try {
+    const result = await $\`${bin} startup-check\`.nothrow().quiet();
+    startupContext = result.stdout.toString().trim();
+  } catch {}
+  return {
+    tool: {
+      ai_report_check: tool({
+        description: "Show AI Report status: yesterday's pending reports and context for current project. Call this tool at the start of every session.",
+        args: {},
+        async execute(_args, ctx) {
+          if (startupContext) return startupContext;
+          try {
+            const result = await $\`${bin} startup-check\`.nothrow().quiet();
+            return result.stdout.toString() || "No pending reports.";
+          } catch {
+            return "No pending reports.";
+          }
+        },
+      }),
+    },
+    event: async ({ event }) => {
+      if (event.type === "session.created") {
+        try {
+          const result = await $\`${bin} startup-check\`.nothrow().quiet();
+          startupContext = result.stdout.toString().trim();
+        } catch {}
+      }
+    },
+  };
+};
 export default plugin;
 `
 }

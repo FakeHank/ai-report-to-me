@@ -56,8 +56,8 @@ export class ReportScheduler {
     if (lastDate) {
       return dayjs(lastDate).startOf('day').toDate()
     }
-    // Default: look back 7 days
-    return dayjs().subtract(7, 'day').startOf('day').toDate()
+    // Default: look back 3 days (day before yesterday, yesterday, today)
+    return dayjs().subtract(3, 'day').startOf('day').toDate()
   }
 }
 

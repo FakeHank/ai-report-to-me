@@ -9,7 +9,8 @@ const { prompt } = Enquirer
 
 export const uninstallCommand = new Command('uninstall')
   .description('Remove hooks and optionally delete data')
-  .action(async () => {
+  .option('--hooks-only', 'Only remove hooks (skip data deletion prompt, used by npm preuninstall)')
+  .action(async (opts: { hooksOnly?: boolean }) => {
     logger.bold('AI Report to Me · Uninstall\n')
 
     const registry = getRegistry()
@@ -25,6 +26,11 @@ export const uninstallCommand = new Command('uninstall')
           logger.warn(`Failed to remove hook for ${adapter.name}: ${e instanceof Error ? e.message : e}`)
         }
       }
+    }
+
+    if (opts.hooksOnly) {
+      logger.success('\nHooks removed.')
+      return
     }
 
     // Ask about data deletion

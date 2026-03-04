@@ -12,7 +12,8 @@
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "preuninstall": "aireport uninstall --hooks-only || true"
   },
   "keywords": [
     "ai",

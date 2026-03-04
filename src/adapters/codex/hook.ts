@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, rmdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { CODEX_DIR, CODEX_SKILL_DIR } from '../../shared/constants.js'
 import type { HookStatus } from '../adapter.interface.js'
@@ -17,8 +17,9 @@ export async function installHook(): Promise<void> {
 }
 
 export async function uninstallHook(): Promise<void> {
-  // Clean up skill file
+  // Clean up skill file and directory
   if (existsSync(SKILL_FILE)) unlinkSync(SKILL_FILE)
+  try { rmdirSync(CODEX_SKILL_DIR) } catch { /* non-empty or missing, ignore */ }
 
   // Clean up legacy aireport notify lines from config.toml
   if (!existsSync(CODEX_CONFIG_PATH)) return

@@ -18,16 +18,20 @@ function matchesAireportCommand(cmd: string, suffix: string): boolean {
   return cmd === `aireport ${suffix}` || cmd.endsWith(`/aireport ${suffix}`)
 }
 
+function isAireportHookEntry(entry: HookEntry): boolean {
+  return entry.hooks?.some((h) =>
+    h.command === 'aireport' || h.command.endsWith('/aireport') ||
+    /(?:^|\/)aireport\s/.test(h.command)
+  ) || false
+}
+
 interface HookEntry {
   matcher?: string
   hooks: Array<{ type: string; command: string; timeout?: number }>
 }
 
 interface ClaudeSettings {
-  hooks?: {
-    SessionStart?: HookEntry[]
-    [key: string]: unknown
-  }
+  hooks?: Record<string, HookEntry[]>
   [key: string]: unknown
 }
 
@@ -37,12 +41,6 @@ function hasAireportHook(entries: HookEntry[] | undefined, suffix: string): bool
   return entries?.some((entry) =>
     entry.hooks?.some((h) => matchesAireportCommand(h.command, suffix))
   ) || false
-}
-
-function removeAireportHook(entries: HookEntry[], suffix: string): HookEntry[] {
-  return entries.filter(
-    (entry) => !entry.hooks?.some((h) => matchesAireportCommand(h.command, suffix))
-  )
 }
 
 export async function installHook(): Promise<void> {
@@ -74,10 +72,19 @@ export async function uninstallHook(): Promise<void> {
 
   const settings = readSettings()
 
-  if (settings.hooks?.SessionStart) {
-    settings.hooks.SessionStart = removeAireportHook(settings.hooks.SessionStart, STARTUP_SUFFIX)
-    if (settings.hooks.SessionStart.length === 0) {
-      delete settings.hooks.SessionStart
+  if (settings.hooks) {
+    // Clean ALL aireport-related hooks from every hook type
+    // (SessionStart, SessionEnd, etc.) to handle both current and legacy hooks
+    for (const hookType of Object.keys(settings.hooks)) {
+      const entries = settings.hooks[hookType]
+      if (!Array.isArray(entries)) continue
+
+      const cleaned = entries.filter((entry) => !isAireportHookEntry(entry))
+      if (cleaned.length === 0) {
+        delete settings.hooks[hookType]
+      } else if (cleaned.length !== entries.length) {
+        settings.hooks[hookType] = cleaned
+      }
     }
   }
 

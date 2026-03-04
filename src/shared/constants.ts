@@ -27,7 +27,7 @@ export const OPENCODE_DIR = join(HOME_DIR, '.local', 'share', 'opencode')
 export const OPENCODE_COMMANDS_DIR = join(HOME_DIR, '.config', 'opencode', 'commands')
 export const OPENCODE_DB_PATH = join(OPENCODE_DIR, 'opencode.db')
 
-export const DEFAULT_BACKFILL_LIMIT = 7
+export const DEFAULT_BACKFILL_LIMIT = 3
 export const DEFAULT_WRAPPED_DAYS = 90
 
 export const REPORT_META_START = '<!-- ai-report-meta'
