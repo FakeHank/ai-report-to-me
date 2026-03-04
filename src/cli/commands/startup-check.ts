@@ -154,18 +154,31 @@ function extractProjectSection(reportPath: string, projectName: string): string 
 }
 
 async function readStdin(): Promise<Record<string, unknown>> {
+  // If stdin is a TTY or not piped, skip reading entirely
+  if (process.stdin.isTTY) return {}
+
   return new Promise((resolve) => {
     let data = ''
+    let resolved = false
+    const done = (result: Record<string, unknown>) => {
+      if (resolved) return
+      resolved = true
+      process.stdin.removeAllListeners()
+      process.stdin.unref()
+      resolve(result)
+    }
+
     process.stdin.setEncoding('utf-8')
     process.stdin.on('data', (chunk) => { data += chunk })
     process.stdin.on('end', () => {
       try {
-        resolve(data.trim() ? JSON.parse(data) : {})
+        done(data.trim() ? JSON.parse(data) : {})
       } catch {
-        resolve({})
+        done({})
       }
     })
-    // Timeout after 500ms
-    setTimeout(() => resolve({}), 500)
+    process.stdin.on('error', () => done({}))
+    // Timeout after 500ms — unref stdin so process can exit
+    setTimeout(() => done({}), 500)
   })
 }
