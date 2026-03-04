@@ -2,10 +2,14 @@ import { existsSync, mkdirSync, writeFileSync, unlinkSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
+import { OPENCODE_COMMANDS_DIR } from '../../shared/constants.js'
 import type { HookStatus } from '../adapter.interface.js'
+import { getDayreportContent, getQtreportContent } from '../command-templates.js'
 
 const OPENCODE_PLUGINS_DIR = join(homedir(), '.config', 'opencode', 'plugins')
 const PLUGIN_FILE = join(OPENCODE_PLUGINS_DIR, 'ai-report.js')
+const DAYREPORT_PATH = join(OPENCODE_COMMANDS_DIR, 'dayreport.md')
+const QTREPORT_PATH = join(OPENCODE_COMMANDS_DIR, 'qtreport.md')
 
 function resolveAireportBin(): string {
   try {
@@ -41,17 +45,26 @@ export async function installHook(): Promise<void> {
   }
 
   writeFileSync(PLUGIN_FILE, generatePluginSource(bin), 'utf-8')
+
+  // Install slash commands
+  if (!existsSync(OPENCODE_COMMANDS_DIR)) {
+    mkdirSync(OPENCODE_COMMANDS_DIR, { recursive: true })
+  }
+  writeFileSync(DAYREPORT_PATH, getDayreportContent(), 'utf-8')
+  writeFileSync(QTREPORT_PATH, getQtreportContent(), 'utf-8')
 }
 
 export async function uninstallHook(): Promise<void> {
-  if (existsSync(PLUGIN_FILE)) {
-    unlinkSync(PLUGIN_FILE)
-  }
+  if (existsSync(PLUGIN_FILE)) unlinkSync(PLUGIN_FILE)
+  if (existsSync(DAYREPORT_PATH)) unlinkSync(DAYREPORT_PATH)
+  if (existsSync(QTREPORT_PATH)) unlinkSync(QTREPORT_PATH)
 }
 
 export async function checkHookStatus(): Promise<HookStatus> {
+  const pluginOk = existsSync(PLUGIN_FILE)
+  const cmdsOk = existsSync(DAYREPORT_PATH) && existsSync(QTREPORT_PATH)
   return {
-    installed: existsSync(PLUGIN_FILE),
+    installed: pluginOk && cmdsOk,
     hookType: 'plugin (custom tool)',
     configPath: PLUGIN_FILE,
   }

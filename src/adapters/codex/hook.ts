@@ -1,21 +1,27 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { CODEX_DIR } from '../../shared/constants.js'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs'
+import { join } from 'node:path'
+import { CODEX_DIR, CODEX_SKILL_DIR } from '../../shared/constants.js'
 import type { HookStatus } from '../adapter.interface.js'
+import { getCodexSkillContent } from '../command-templates.js'
 
 const CODEX_CONFIG_PATH = `${CODEX_DIR}/config.toml`
 const AIREPORT_MARKER = '# ai-report-hook'
-
-// Codex notify was previously used for log-session, which has been removed.
-// No hooks are currently needed. Keeping the structure for future use.
+const SKILL_FILE = join(CODEX_SKILL_DIR, 'SKILL.md')
 
 export async function installHook(): Promise<void> {
-  // No hooks to install currently
+  // Install slash commands as a Codex skill
+  if (!existsSync(CODEX_SKILL_DIR)) {
+    mkdirSync(CODEX_SKILL_DIR, { recursive: true })
+  }
+  writeFileSync(SKILL_FILE, getCodexSkillContent(), 'utf-8')
 }
 
 export async function uninstallHook(): Promise<void> {
-  if (!existsSync(CODEX_CONFIG_PATH)) return
+  // Clean up skill file
+  if (existsSync(SKILL_FILE)) unlinkSync(SKILL_FILE)
 
-  // Clean up any legacy aireport notify lines
+  // Clean up legacy aireport notify lines from config.toml
+  if (!existsSync(CODEX_CONFIG_PATH)) return
   const content = readFileSync(CODEX_CONFIG_PATH, 'utf-8')
   if (content.includes(AIREPORT_MARKER)) {
     const lines = content.split('\n')
@@ -26,6 +32,9 @@ export async function uninstallHook(): Promise<void> {
 }
 
 export async function checkHookStatus(): Promise<HookStatus> {
-  // No hooks needed currently, always report as installed
-  return { installed: true, hookType: 'none', configPath: CODEX_CONFIG_PATH }
+  return {
+    installed: existsSync(SKILL_FILE),
+    hookType: 'skill (slash commands)',
+    configPath: SKILL_FILE,
+  }
 }

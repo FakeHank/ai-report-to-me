@@ -2,6 +2,7 @@ import { Command } from 'commander'
 import { loadConfig, saveConfig, type Config } from '../../shared/config.js'
 import { logger } from '../../shared/logger.js'
 import { getRegistry } from '../../adapters/registry.js'
+import { t, tf } from '../../shared/i18n.js'
 
 const VALID_LANGS = ['en', 'zh', 'ja', 'ko', 'ru'] as const
 
@@ -37,6 +38,11 @@ export const installCommand = new Command('install')
   })
 
 async function runNonInteractive(opts: InstallOpts) {
+  // Resolve language early — known from --lang upfront
+  const lang = opts.lang && VALID_LANGS.includes(opts.lang as any)
+    ? (opts.lang as Config['output_lang'])
+    : 'en'
+
   logger.bold('AI Report to Me · Setup (non-interactive)\n')
 
   const registry = getRegistry()
@@ -44,16 +50,16 @@ async function runNonInteractive(opts: InstallOpts) {
   const detected = detectResults.filter((r) => r.installed)
 
   if (detected.length === 0) {
-    logger.error('No supported CLI tools detected.')
-    logger.info('Supported: Claude Code, Gemini CLI, OpenCode, Codex')
+    logger.error(t('install.noCliDetected', lang))
+    logger.info(t('install.supportedClis', lang))
     process.exitCode = 1
     return
   }
 
   // Show detected CLIs
-  logger.info('Detected CLI tools:')
+  logger.info(t('install.detectedClis', lang))
   for (const r of detected) {
-    logger.success(`  ${r.name}: ${r.sessionCount} sessions`)
+    logger.success(`  ${r.name}: ${tf('install.sessions', lang, { count: r.sessionCount })}`)
   }
   console.log()
 
@@ -75,10 +81,6 @@ async function runNonInteractive(opts: InstallOpts) {
   }
   logger.info(`Sources: ${selectedSources.join(', ')}`)
 
-  // Resolve language
-  const lang = opts.lang && VALID_LANGS.includes(opts.lang as any)
-    ? (opts.lang as Config['output_lang'])
-    : 'en'
   logger.info(`Language: ${lang}`)
 
   // Resolve webhook URLs
@@ -92,7 +94,7 @@ async function runNonInteractive(opts: InstallOpts) {
 
   const webhookCount = Object.keys(webhooks).length
   if (webhookCount > 0) {
-    logger.info(`Webhooks: ${webhookCount} configured`)
+    logger.info(tf('install.webhooksConfigured', lang, { count: webhookCount }))
   }
 
   // Save config
@@ -105,20 +107,21 @@ async function runNonInteractive(opts: InstallOpts) {
   }
 
   saveConfig(config)
-  logger.success('Configuration saved!')
+  logger.success(t('install.configSaved', lang))
 
   // Install hooks
-  await installHooks(registry, selectedSources)
+  await installHooks(registry, selectedSources, lang)
 
   console.log()
-  logger.success('Setup complete!')
-  printNextSteps()
+  logger.success(t('install.setupComplete', lang))
+  printNextSteps(lang)
 }
 
 async function runInteractive(_opts: InstallOpts) {
   const Enquirer = (await import('enquirer')).default
   const { prompt } = Enquirer
 
+  // Title banner stays in English (before language selection)
   logger.bold('AI Report to Me · Setup Wizard\n')
 
   const registry = getRegistry()
@@ -126,12 +129,13 @@ async function runInteractive(_opts: InstallOpts) {
   const detected = detectResults.filter((r) => r.installed)
 
   if (detected.length === 0) {
+    // Before language selection — English
     logger.error('No supported CLI tools detected.')
     logger.info('Supported: Claude Code, Gemini CLI, OpenCode, Codex')
     return
   }
 
-  // Step 1: Show detected CLIs and use all as sources
+  // Step 1: Show detected CLIs (before language selection — English)
   logger.info('Detected CLI tools:')
   for (const r of detected) {
     logger.success(`  ${r.name}: ${r.sessionCount} sessions`)
@@ -152,19 +156,22 @@ async function runInteractive(_opts: InstallOpts) {
       { name: 'ru', message: 'Русский' },
     ],
   })
+  const lang = langAnswer.lang
+
+  // --- From here on, all messages use the selected language ---
 
   // Step 3: Preview data
   console.log()
   const totalSessions = detected
     .filter((r) => selectedSources.includes(r.name))
     .reduce((sum, r) => sum + r.sessionCount, 0)
-  logger.info(`Found ${totalSessions} total sessions across ${selectedSources.length} source(s)`)
+  logger.info(tf('install.foundSessions', lang, { total: totalSessions, n: selectedSources.length }))
 
   // Step 4: Daily reminder
   const reminderAnswer = await prompt<{ reminder: boolean }>({
     type: 'confirm',
     name: 'reminder',
-    message: 'Enable session startup reminder for pending reports?',
+    message: t('install.reminderPrompt', lang),
     initial: true,
   } as any)
 
@@ -172,7 +179,7 @@ async function runInteractive(_opts: InstallOpts) {
   const webhookAnswer = await prompt<{ configure: boolean }>({
     type: 'confirm',
     name: 'configure',
-    message: 'Configure webhook notifications?',
+    message: t('install.webhookPrompt', lang),
     initial: false,
   } as any)
 
@@ -190,7 +197,7 @@ async function runInteractive(_opts: InstallOpts) {
       const urlAnswer = await prompt<{ url: string }>({
         type: 'input',
         name: 'url',
-        message: `${label} webhook URL (leave empty to skip):`,
+        message: tf('install.webhookUrlPrompt', lang, { label }),
       })
       if (urlAnswer.url.trim()) {
         webhooks[key] = urlAnswer.url.trim()
@@ -198,7 +205,7 @@ async function runInteractive(_opts: InstallOpts) {
     }
     const count = Object.keys(webhooks).length
     if (count > 0) {
-      logger.success(`${count} webhook(s) configured`)
+      logger.success(tf('install.webhooksConfigured', lang, { count }))
     }
   }
 
@@ -212,17 +219,17 @@ async function runInteractive(_opts: InstallOpts) {
   }
 
   saveConfig(config)
-  logger.success('Configuration saved!')
+  logger.success(t('install.configSaved', lang))
 
   // Install hooks
-  await installHooks(registry, selectedSources)
+  await installHooks(registry, selectedSources, lang)
 
   console.log()
-  logger.success('Setup complete!')
-  printNextSteps()
+  logger.success(t('install.setupComplete', lang))
+  printNextSteps(lang)
 }
 
-async function installHooks(registry: ReturnType<typeof getRegistry>, sources: string[]) {
+async function installHooks(registry: ReturnType<typeof getRegistry>, sources: string[], lang: string) {
   console.log()
   const detectResults = await registry.detectAll()
   const detectMap = new Map(detectResults.map((r) => [r.name, r]))
@@ -233,7 +240,7 @@ async function installHooks(registry: ReturnType<typeof getRegistry>, sources: s
     const hookSupport = detect?.hookSupport || 'none'
 
     if (hookSupport === 'none') {
-      logger.info(`${source}: no hook support. Reports are generated from session data directly.`)
+      logger.info(tf('install.hookNone', lang, { source }))
       continue
     }
 
@@ -241,27 +248,30 @@ async function installHooks(registry: ReturnType<typeof getRegistry>, sources: s
       try {
         await adapter.installHook()
         if (hookSupport === 'full') {
-          logger.success(`Hook installed for ${source} (startup check on session start)`)
+          logger.success(tf('install.hookFull', lang, { source }))
         } else {
-          const limitations: Record<string, string> = {
-            'opencode': 'custom tool only — invoke ai_report_check manually in chat',
-          }
-          const detail = limitations[source] || 'limited hook support'
-          logger.success(`Hook installed for ${source} (partial: ${detail})`)
+          const detail = source === 'opencode'
+            ? t('install.hookPartialOpencode', lang)
+            : source === 'codex'
+            ? 'slash commands installed (no session hook)'
+            : source === 'gemini-cli'
+            ? 'slash commands installed (no session hook)'
+            : 'limited hook support'
+          logger.success(tf('install.hookPartial', lang, { source, detail }))
         }
       } catch (e) {
-        logger.warn(`Failed to install hook for ${source}: ${e instanceof Error ? e.message : e}`)
+        logger.warn(tf('install.hookFailed', lang, { source, error: e instanceof Error ? e.message : String(e) }))
       }
     }
   }
 }
 
-function printNextSteps() {
+function printNextSteps(lang: string) {
   console.log()
-  logger.info('Next steps:')
-  logger.info('  Open your coding CLI (Claude Code, OpenCode, Codex, etc.) and type:')
-  logger.bold('    /dayreport    — generate a daily report')
-  logger.bold('    /qtreport     — generate a 90-day Wrapped summary')
+  logger.info(t('install.nextSteps', lang))
+  logger.info(`  ${t('install.nextStepsOpen', lang)}`)
+  logger.bold(`    ${t('install.nextStepsDayreport', lang)}`)
+  logger.bold(`    ${t('install.nextStepsQtreport', lang)}`)
   console.log()
-  logger.dim('  Or run from terminal:  aireport status')
+  logger.dim(`  ${t('install.nextStepsStatus', lang)}`)
 }

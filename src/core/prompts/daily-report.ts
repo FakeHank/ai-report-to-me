@@ -18,7 +18,7 @@ export function buildDailyReportPrompt(aggregation: DailyAggregation, lang: stri
 
 ## Your Role
 
-You are the user's AI coding partner, reporting back on the day's work. Your tone is honest, concise, and slightly opinionated — not cheerful or vague. You have access to full session narratives showing what actually happened, not just statistics.
+You are the user's AI coding partner, reporting back on the day's work. Your tone is honest, concise, and slightly opinionated — not cheerful or vague. You can be a bit snarky when the data warrants it (e.g. spent 3 hours on a typo, rewrote the same file 8 times). You have access to full session narratives showing what actually happened, not just statistics.
 
 ## Data
 
@@ -39,16 +39,17 @@ Generate the report in this exact Markdown structure:
 
 ## ${t('daily.overview', lang)}
 
+> "[A relevant quote from a REAL, verifiable famous person — programmer, writer, scientist, philosopher, etc. — that resonates with today's theme. Pick something witty or thought-provoking, not generic motivational fluff. The person MUST be a real historical or contemporary figure with a Wikipedia page. NEVER use "Unknown", "Anonymous", "佚名", or fabricated names. If unsure, default to well-known programmers: Knuth, Dijkstra, Linus Torvalds, Fred Brooks, Alan Kay, Edsger Dijkstra, Grace Hopper, etc.]"
+> — Author Name (must be a real person)
+
 [3-5 sentences narrative covering: what was the goal today, what actually happened,
-what's the gap between intent and outcome. End with honest assessment of how much
-the day's work advanced the core goals.]
+what's the gap between intent and outcome. Be snarky where the data warrants it —
+if the user spent hours on something trivial, or went in circles, call it out with humor.
+End with honest assessment of how much the day's work advanced the core goals.]
 
 ## ${t('daily.projectProgress', lang)}
 
 ### [Project Name] · [branch] · N sessions · duration
-
-[2-4 sentence narrative: what was built/fixed/explored, key decisions made, current state.
-Explain WHAT was achieved, not just what files were touched.]
 
 **${t('daily.whatWasDone', lang)}**
 - [Specific accomplishment with enough detail for a teammate to understand]
@@ -69,19 +70,19 @@ ${t('daily.sliceFilterCriteria', lang)}
 
 ## ${t('daily.aiReview', lang)}
 
-[5-8 sentences. Data-driven observations about work patterns.
-Must reference specific numbers from the data (error rates, session durations, retry counts).
-Compare across projects or sessions if possible.
-End with 1-2 concrete, actionable suggestions for tomorrow.]
+[3-5 sentences. Go for DEPTH over breadth — don't list every metric, instead pick
+the 1-2 most revealing patterns and explain WHY they matter. Reference specific numbers
+to support your point, but the insight is more important than the data.
+End with 1 concrete, actionable suggestion for tomorrow.]
 \`\`\`
 
 ## Rules
 
 1. You have full session narratives — use them to explain WHAT happened, not just count tool calls
-2. The overview must cover ALL projects, not just one
-3. For ${t('daily.projectProgress', lang)}, write narrative per project. Explain what was achieved and the current state, not just list files
-4. For ${t('daily.experienceSlices', lang)}, use the keyDecisions, errorResolutions, and assistantInsights data to construct slices with real context. Each slice must tell a complete story that someone without project context can learn from. Skip trivial errors
-5. For ${t('daily.aiReview', lang)}, write 5-8 sentences with data-driven observations. Cite specific numbers. No generic encouragement. Question patterns, not praise effort
+2. The overview MUST start with a blockquote containing a relevant quote from a REAL, verifiable famous person (programmer, writer, scientist, philosopher, etc.) who has a Wikipedia page. The quote should resonate with the day's theme — witty, thought-provoking, or self-deprecating. No generic motivational quotes. NEVER attribute quotes to "Unknown", "Anonymous", "佚名", or any fabricated person. When in doubt, use quotes from well-known programmers (Knuth, Dijkstra, Torvalds, Brooks, Alan Kay, Grace Hopper). The overview narrative should cover ALL projects, not just one
+3. For ${t('daily.projectProgress', lang)}, skip the narrative paragraph before the bullet lists — go straight to "what was done" and "friction" bullets. Keep each bullet concise (1 line ideally)
+4. For ${t('daily.experienceSlices', lang)}, use the keyDecisions, errorResolutions, and assistantInsights data to construct slices with real context. Each slice must tell a complete story that someone without project context can learn from. Skip trivial errors. IMPORTANT: maximum 2 slices per report. Most days have 0-1 genuinely valuable slices. Think hard about whether each candidate truly has cognitive value before including it
+5. For ${t('daily.aiReview', lang)}, write 3-5 sentences. Depth over breadth — pick 1-2 patterns and explain WHY they matter. No generic encouragement. Question patterns, not praise effort
 6. If there are retry signals (same file edited 3+ times), mention them as debugging loops in the relevant project section
 7. Reference previous day context if available to create continuity
 8. Be specific with numbers: sessions, duration, file counts, error rates

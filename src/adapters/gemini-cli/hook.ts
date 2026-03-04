@@ -1,22 +1,29 @@
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
-import { GEMINI_DIR } from '../../shared/constants.js'
+import { GEMINI_DIR, GEMINI_COMMANDS_DIR } from '../../shared/constants.js'
 import type { HookStatus } from '../adapter.interface.js'
+import { getDayreportContent, getQtreportContent } from '../command-templates.js'
 
 const GEMINI_SETTINGS_PATH = join(GEMINI_DIR, 'settings.json')
-
-// Gemini CLI's AfterAgent hook was previously used for log-session,
-// which has been removed. No hooks are currently needed.
-// Keeping the structure for future use.
+const DAYREPORT_PATH = join(GEMINI_COMMANDS_DIR, 'dayreport.md')
+const QTREPORT_PATH = join(GEMINI_COMMANDS_DIR, 'qtreport.md')
 
 export async function installHook(): Promise<void> {
-  // No hooks to install currently
+  // Install slash commands
+  if (!existsSync(GEMINI_COMMANDS_DIR)) {
+    mkdirSync(GEMINI_COMMANDS_DIR, { recursive: true })
+  }
+  writeFileSync(DAYREPORT_PATH, getDayreportContent(), 'utf-8')
+  writeFileSync(QTREPORT_PATH, getQtreportContent(), 'utf-8')
 }
 
 export async function uninstallHook(): Promise<void> {
-  if (!existsSync(GEMINI_SETTINGS_PATH)) return
+  // Remove slash commands
+  if (existsSync(DAYREPORT_PATH)) unlinkSync(DAYREPORT_PATH)
+  if (existsSync(QTREPORT_PATH)) unlinkSync(QTREPORT_PATH)
 
-  // Clean up any legacy aireport hooks
+  // Clean up any legacy aireport hooks from settings.json
+  if (!existsSync(GEMINI_SETTINGS_PATH)) return
   const settings = readSettings()
   if (settings.hooks?.AfterAgent) {
     settings.hooks.AfterAgent = settings.hooks.AfterAgent.filter(
@@ -30,8 +37,11 @@ export async function uninstallHook(): Promise<void> {
 }
 
 export async function checkHookStatus(): Promise<HookStatus> {
-  // No hooks needed currently, always report as installed
-  return { installed: true, hookType: 'none', configPath: GEMINI_SETTINGS_PATH }
+  return {
+    installed: existsSync(DAYREPORT_PATH) && existsSync(QTREPORT_PATH),
+    hookType: 'commands (slash commands)',
+    configPath: GEMINI_COMMANDS_DIR,
+  }
 }
 
 function readSettings(): Record<string, any> {

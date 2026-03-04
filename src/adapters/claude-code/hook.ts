@@ -1,7 +1,9 @@
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'node:fs'
 import { execSync } from 'node:child_process'
-import { CLAUDE_SETTINGS_PATH } from '../../shared/constants.js'
+import { join } from 'node:path'
+import { CLAUDE_SETTINGS_PATH, CLAUDE_COMMANDS_DIR } from '../../shared/constants.js'
 import type { HookStatus } from '../adapter.interface.js'
+import { getDayreportContent, getQtreportContent } from '../command-templates.js'
 
 function resolveAireportBin(): string {
   try {
@@ -62,6 +64,9 @@ export async function installHook(): Promise<void> {
     })
     writeSettings(settings)
   }
+
+  // Install slash commands
+  installCommands()
 }
 
 export async function uninstallHook(): Promise<void> {
@@ -77,6 +82,9 @@ export async function uninstallHook(): Promise<void> {
   }
 
   writeSettings(settings)
+
+  // Remove slash commands
+  uninstallCommands()
 }
 
 export async function checkHookStatus(): Promise<HookStatus> {
@@ -85,10 +93,11 @@ export async function checkHookStatus(): Promise<HookStatus> {
   }
 
   const settings = readSettings()
-  const installed = hasAireportHook(settings.hooks?.SessionStart, STARTUP_SUFFIX)
+  const hookInstalled = hasAireportHook(settings.hooks?.SessionStart, STARTUP_SUFFIX)
+  const cmdsInstalled = commandsInstalled()
 
   return {
-    installed,
+    installed: hookInstalled && cmdsInstalled,
     hookType: 'SessionStart',
     configPath: CLAUDE_SETTINGS_PATH,
   }
@@ -105,4 +114,24 @@ function readSettings(): ClaudeSettings {
 
 function writeSettings(settings: ClaudeSettings): void {
   writeFileSync(CLAUDE_SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n', 'utf-8')
+}
+
+const DAYREPORT_PATH = join(CLAUDE_COMMANDS_DIR, 'dayreport.md')
+const QTREPORT_PATH = join(CLAUDE_COMMANDS_DIR, 'qtreport.md')
+
+function installCommands(): void {
+  if (!existsSync(CLAUDE_COMMANDS_DIR)) {
+    mkdirSync(CLAUDE_COMMANDS_DIR, { recursive: true })
+  }
+  writeFileSync(DAYREPORT_PATH, getDayreportContent(), 'utf-8')
+  writeFileSync(QTREPORT_PATH, getQtreportContent(), 'utf-8')
+}
+
+function uninstallCommands(): void {
+  if (existsSync(DAYREPORT_PATH)) unlinkSync(DAYREPORT_PATH)
+  if (existsSync(QTREPORT_PATH)) unlinkSync(QTREPORT_PATH)
+}
+
+function commandsInstalled(): boolean {
+  return existsSync(DAYREPORT_PATH) && existsSync(QTREPORT_PATH)
 }

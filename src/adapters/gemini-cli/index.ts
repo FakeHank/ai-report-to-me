@@ -11,7 +11,7 @@ export class GeminiCliAdapter implements CLIAdapter {
 
   async detect(): Promise<DetectResult> {
     if (!existsSync(GEMINI_TMP_DIR)) {
-      return { name: this.name, installed: false, dataPath: null, sessionCount: 0, hookSupport: 'none' }
+      return { name: this.name, installed: false, dataPath: null, sessionCount: 0, hookSupport: 'partial' }
     }
 
     let sessionCount = 0
@@ -26,7 +26,7 @@ export class GeminiCliAdapter implements CLIAdapter {
       installed: sessionCount > 0,
       dataPath: GEMINI_TMP_DIR,
       sessionCount,
-      hookSupport: 'none',
+      hookSupport: 'partial',
     }
   }
 

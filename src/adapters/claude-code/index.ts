@@ -150,9 +150,39 @@ export class ClaudeCodeAdapter implements CLIAdapter {
 }
 
 function decodeProjectPath(dirName: string): string {
-  // Claude Code encodes project paths: '-Users-hankyuan-project' → '/Users/hankyuan/project'
+  // Claude Code encodes project paths by replacing '/' with '-':
+  //   /Users/hankyuan/ai-report-to-me → -Users-hankyuan-ai-report-to-me
+  // Naive replace of all '-' with '/' breaks paths containing hyphens.
+  // Strategy: greedily match real directory segments from left to right using fs.
   if (dirName === '-') return '/'
-  return dirName.replace(/-/g, '/')
+
+  // Strip leading '-' (represents root '/')
+  const encoded = dirName.startsWith('-') ? dirName.slice(1) : dirName
+  const parts = encoded.split('-')
+
+  const resolved: string[] = []
+  let i = 0
+  while (i < parts.length) {
+    // Try longest match first: join remaining parts with '-' and check if path exists
+    let matched = false
+    for (let end = parts.length; end > i; end--) {
+      const candidate = parts.slice(i, end).join('-')
+      const testPath = '/' + [...resolved, candidate].join('/')
+      if (existsSync(testPath)) {
+        resolved.push(candidate)
+        i = end
+        matched = true
+        break
+      }
+    }
+    if (!matched) {
+      // No fs match; treat single segment as-is
+      resolved.push(parts[i])
+      i++
+    }
+  }
+
+  return '/' + resolved.join('/')
 }
 
 function extractProjectName(projectPath: string): string {

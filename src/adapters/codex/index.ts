@@ -11,7 +11,7 @@ export class CodexAdapter implements CLIAdapter {
 
   async detect(): Promise<DetectResult> {
     if (!existsSync(CODEX_SESSIONS_DIR)) {
-      return { name: this.name, installed: false, dataPath: null, sessionCount: 0, hookSupport: 'none' }
+      return { name: this.name, installed: false, dataPath: null, sessionCount: 0, hookSupport: 'partial' }
     }
 
     let sessionCount = 0
@@ -26,7 +26,7 @@ export class CodexAdapter implements CLIAdapter {
       installed: true,
       dataPath: CODEX_SESSIONS_DIR,
       sessionCount,
-      hookSupport: 'none',
+      hookSupport: 'partial',
     }
   }
 

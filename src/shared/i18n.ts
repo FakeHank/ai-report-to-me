@@ -95,30 +95,35 @@ const translations: Record<string, Record<Lang, string>> = {
   },
   'daily.sliceFilterCriteria': {
     en: `Selection criteria:
+- MAXIMUM 2 slices per report. Most days have 0-1 genuinely valuable slices. Be ruthlessly selective
 - Only keep slices with "cognitive value" — the reader learns something they didn't know before
 - Skip purely operational content (installing dependencies, creating files, fixing typos)
 - Skip simple errors without exploration process (file not found, import path errors)
 - Prefer: debugging processes with turning points, solution choices with tradeoffs, technical discoveries with depth
 - If there are no worthwhile experience slices today, write "Today's work was routine development, no notable experience slices." — don't force it`,
     zh: `筛选标准：
+- 每篇日报最多 2 个切片。大部分日子只有 0-1 个真正值得记录的切片。务必严格筛选
 - 只保留有"认知增量"的切片 — 读者看完后学到了之前不知道的东西
 - 跳过纯操作性内容（安装依赖、创建文件、修复 typo）
 - 跳过没有解决过程的简单错误（file not found、import 路径错误）
 - 优先选择：调试过程有转折的、方案选择有 tradeoff 的、技术发现有深度的
 - 如果当天没有值得写的经验切片，写"今天的工作以常规开发为主，没有特别值得记录的经验切片。"，不要硬凑`,
     ja: `選択基準：
+- 1レポートにつき最大2スライス。ほとんどの日は本当に価値のあるスライスは0-1個。厳選すること
 - 「認知的価値」のあるスライスのみ残す — 読者が以前知らなかったことを学べる
 - 純粋な操作内容はスキップ（依存関係のインストール、ファイル作成、タイポ修正）
 - 探索プロセスのない単純なエラーはスキップ（file not found、importパスエラー）
 - 優先：転機のあるデバッグプロセス、トレードオフのあるソリューション選択、深みのある技術的発見
 - 当日に書くべき経験スライスがない場合は「今日の作業は通常の開発が中心で、特筆すべき経験スライスはありませんでした。」と書く — 無理に作らない`,
     ko: `선별 기준:
+- 보고서당 최대 2개 슬라이스. 대부분의 날은 진정으로 가치 있는 슬라이스가 0-1개. 엄격하게 선별할 것
 - "인지적 가치"가 있는 슬라이스만 유지 — 독자가 이전에 몰랐던 것을 배울 수 있어야 함
 - 순수한 작업 내용 건너뛰기 (의존성 설치, 파일 생성, 오타 수정)
 - 탐색 과정이 없는 단순한 에러 건너뛰기 (file not found, import 경로 에러)
 - 우선 선택: 전환점이 있는 디버깅 과정, 트레이드오프가 있는 솔루션 선택, 깊이 있는 기술적 발견
 - 당일 쓸 만한 경험 슬라이스가 없으면 "오늘의 작업은 일상적인 개발이 주였으며, 특별히 기록할 만한 경험 슬라이스는 없습니다."라고 쓰기 — 억지로 만들지 않기`,
     ru: `Критерии отбора:
+- МАКСИМУМ 2 среза на отчёт. В большинстве дней действительно ценных срезов 0-1. Будьте безжалостно избирательны
 - Оставляйте только срезы с «познавательной ценностью» — читатель узнаёт что-то новое
 - Пропускайте чисто операционный контент (установка зависимостей, создание файлов, исправление опечаток)
 - Пропускайте простые ошибки без процесса исследования (file not found, ошибки путей импорта)
@@ -323,6 +328,155 @@ const translations: Record<string, Record<Lang, string>> = {
     ja: 'トッププロジェクト',
     ko: '탑 프로젝트',
     ru: 'топ-проект',
+  },
+
+  // Install wizard
+  'install.noCliDetected': {
+    en: 'No supported CLI tools detected.',
+    zh: '未检测到支持的 CLI 工具。',
+    ja: 'サポートされているCLIツールが検出されませんでした。',
+    ko: '지원되는 CLI 도구가 감지되지 않았습니다.',
+    ru: 'Поддерживаемые CLI-инструменты не обнаружены.',
+  },
+  'install.supportedClis': {
+    en: 'Supported: Claude Code, Gemini CLI, OpenCode, Codex',
+    zh: '支持的工具：Claude Code、Gemini CLI、OpenCode、Codex',
+    ja: '対応ツール：Claude Code、Gemini CLI、OpenCode、Codex',
+    ko: '지원 도구: Claude Code, Gemini CLI, OpenCode, Codex',
+    ru: 'Поддерживаемые: Claude Code, Gemini CLI, OpenCode, Codex',
+  },
+  'install.detectedClis': {
+    en: 'Detected CLI tools:',
+    zh: '检测到的 CLI 工具：',
+    ja: '検出されたCLIツール：',
+    ko: '감지된 CLI 도구:',
+    ru: 'Обнаруженные CLI-инструменты:',
+  },
+  'install.sessions': {
+    en: '{count} sessions',
+    zh: '{count} 个 session',
+    ja: '{count} セッション',
+    ko: '{count}개 세션',
+    ru: '{count} сессий',
+  },
+  'install.foundSessions': {
+    en: 'Found {total} total sessions across {n} source(s)',
+    zh: '共发现 {total} 个 session，来自 {n} 个数据源',
+    ja: '{n} 個のソースから合計 {total} セッションを検出',
+    ko: '{n}개 소스에서 총 {total}개 세션 발견',
+    ru: 'Найдено {total} сессий из {n} источников',
+  },
+  'install.reminderPrompt': {
+    en: 'Enable session startup reminder for pending reports?',
+    zh: '启用会话启动时的待生成日报提醒？',
+    ja: '未生成レポートのセッション起動リマインダーを有効にしますか？',
+    ko: '미생성 보고서에 대한 세션 시작 알림을 활성화하시겠습니까?',
+    ru: 'Включить напоминание о незавершённых отчётах при запуске сессии?',
+  },
+  'install.webhookPrompt': {
+    en: 'Configure webhook notifications?',
+    zh: '配置 Webhook 通知？',
+    ja: 'Webhook通知を設定しますか？',
+    ko: 'Webhook 알림을 구성하시겠습니까?',
+    ru: 'Настроить уведомления через вебхук?',
+  },
+  'install.webhookUrlPrompt': {
+    en: '{label} webhook URL (leave empty to skip):',
+    zh: '{label} Webhook URL（留空跳过）：',
+    ja: '{label} Webhook URL（スキップするには空のまま）：',
+    ko: '{label} Webhook URL (건너뛰려면 비워두세요):',
+    ru: '{label} URL вебхука (оставьте пустым, чтобы пропустить):',
+  },
+  'install.webhooksConfigured': {
+    en: '{count} webhook(s) configured',
+    zh: '已配置 {count} 个 Webhook',
+    ja: '{count} 個のWebhookを設定しました',
+    ko: '{count}개 Webhook 구성 완료',
+    ru: '{count} вебхуков настроено',
+  },
+  'install.configSaved': {
+    en: 'Configuration saved!',
+    zh: '配置已保存！',
+    ja: '設定を保存しました！',
+    ko: '설정이 저장되었습니다!',
+    ru: 'Конфигурация сохранена!',
+  },
+  'install.setupComplete': {
+    en: 'Setup complete!',
+    zh: '设置完成！',
+    ja: 'セットアップ完了！',
+    ko: '설정 완료!',
+    ru: 'Настройка завершена!',
+  },
+  'install.hookNone': {
+    en: '{source}: no hook support. Reports are generated from session data directly.',
+    zh: '{source}：不支持 hook。日报直接从 session 数据生成。',
+    ja: '{source}：フックサポートなし。レポートはセッションデータから直接生成されます。',
+    ko: '{source}: hook 미지원. 보고서는 세션 데이터에서 직접 생성됩니다.',
+    ru: '{source}: хуки не поддерживаются. Отчёты генерируются напрямую из данных сессий.',
+  },
+  'install.hookFull': {
+    en: 'Hook installed for {source} (startup check on session start)',
+    zh: '已为 {source} 安装 hook（会话启动时自动检查）',
+    ja: '{source} にフックをインストールしました（セッション開始時の起動チェック）',
+    ko: '{source}에 hook 설치 완료 (세션 시작 시 자동 확인)',
+    ru: 'Хук установлен для {source} (проверка при запуске сессии)',
+  },
+  'install.hookPartial': {
+    en: 'Hook installed for {source} (partial: {detail})',
+    zh: '已为 {source} 安装 hook（部分支持：{detail}）',
+    ja: '{source} にフックをインストールしました（部分的：{detail}）',
+    ko: '{source}에 hook 설치 완료 (부분 지원: {detail})',
+    ru: 'Хук установлен для {source} (частично: {detail})',
+  },
+  'install.hookPartialOpencode': {
+    en: 'custom tool only — invoke ai_report_check manually in chat',
+    zh: '仅自定义工具 — 需在对话中手动调用 ai_report_check',
+    ja: 'カスタムツールのみ — チャットで ai_report_check を手動実行してください',
+    ko: '커스텀 도구만 — 채팅에서 ai_report_check를 수동으로 호출하세요',
+    ru: 'только пользовательский инструмент — вызовите ai_report_check вручную в чате',
+  },
+  'install.hookFailed': {
+    en: 'Failed to install hook for {source}: {error}',
+    zh: '为 {source} 安装 hook 失败：{error}',
+    ja: '{source} へのフックインストールに失敗しました：{error}',
+    ko: '{source}에 hook 설치 실패: {error}',
+    ru: 'Не удалось установить хук для {source}: {error}',
+  },
+  'install.nextSteps': {
+    en: 'Next steps:',
+    zh: '接下来：',
+    ja: '次のステップ：',
+    ko: '다음 단계:',
+    ru: 'Следующие шаги:',
+  },
+  'install.nextStepsOpen': {
+    en: 'Open your coding CLI (Claude Code, OpenCode, Codex, etc.) and type:',
+    zh: '打开你的编码 CLI（Claude Code、OpenCode、Codex 等）并输入：',
+    ja: 'コーディングCLI（Claude Code、OpenCode、Codexなど）を開いて入力：',
+    ko: '코딩 CLI(Claude Code, OpenCode, Codex 등)를 열고 입력하세요:',
+    ru: 'Откройте ваш CLI для кодирования (Claude Code, OpenCode, Codex и т.д.) и введите:',
+  },
+  'install.nextStepsDayreport': {
+    en: '/dayreport    — generate a daily report',
+    zh: '/dayreport    — 生成日报',
+    ja: '/dayreport    — 日報を生成',
+    ko: '/dayreport    — 일일 보고서 생성',
+    ru: '/dayreport    — сгенерировать дневной отчёт',
+  },
+  'install.nextStepsQtreport': {
+    en: '/qtreport     — generate a 90-day Wrapped summary',
+    zh: '/qtreport     — 生成 90 天 Wrapped 总结',
+    ja: '/qtreport     — 90日間のWrappedサマリーを生成',
+    ko: '/qtreport     — 90일 Wrapped 요약 생성',
+    ru: '/qtreport     — сгенерировать 90-дневный отчёт Wrapped',
+  },
+  'install.nextStepsStatus': {
+    en: 'Or run from terminal:  aireport status',
+    zh: '或在终端运行：aireport status',
+    ja: 'またはターミナルで実行：aireport status',
+    ko: '또는 터미널에서 실행: aireport status',
+    ru: 'Или запустите в терминале: aireport status',
   },
 }
 
