@@ -27,27 +27,21 @@
 
 ## 快速开始
 
-**一键安装：**
+**推荐方式：把下面这行粘贴到你的 coding agent**（Claude Code、Gemini CLI、OpenCode 或 Codex），让它自动完成全部安装：
+
+```
+curl -s https://raw.githubusercontent.com/FakeHank/ai-report-to-me/main/docs/agent-install.md
+```
+
+Agent 会读取安装指南，询问你的偏好（语言、Webhook），然后自动安装并配置。
+
+**或手动安装：**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/FakeHank/ai-report-to-me/main/scripts/install.sh | bash
 ```
 
-**或手动安装：**
-
-```bash
-npm install -g ai-report-to-me
-aireport install          # 交互式安装向导
-```
-
-然后生成第一份报告：
-
-```bash
-aireport daily            # 今日日报
-aireport wrapped          # 90 天 Wrapped 总结
-```
-
-如果你使用 **Claude Code**，还可以直接在 session 中使用 slash command：
+安装完成后，在 coding agent session 中使用 slash command：
 
 ```
 /dayreport                # 生成日报
