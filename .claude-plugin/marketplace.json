@@ -1,0 +1,17 @@
+{
+  "name": "ai-report-tools",
+  "owner": {
+    "name": "FakeHank",
+    "email": "fakehank@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "ai-report-to-me",
+      "source": {
+        "source": "npm",
+        "package": "ai-report-to-me"
+      },
+      "description": "Your AI coding sessions deserve better management \ud83c\udfa7 \u2014 daily reports & 90-day summaries from Claude Code, Gemini CLI, Codex & OpenCode logs."
+    }
+  ]
+}

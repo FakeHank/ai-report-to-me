@@ -1,0 +1,12 @@
+{
+  "name": "ai-report-to-me",
+  "description": "Your AI coding sessions deserve better management 🎧 — daily reports & 90-day summaries from Claude Code, Gemini CLI, Codex & OpenCode logs.",
+  "version": "0.2.6",
+  "author": {
+    "name": "FakeHank"
+  },
+  "homepage": "https://github.com/FakeHank/ai-report-to-me",
+  "repository": "https://github.com/FakeHank/ai-report-to-me",
+  "license": "MIT",
+  "keywords": ["ai-coding", "daily-report", "spotify-wrapped", "vibe-coding", "coding-analytics"]
+}

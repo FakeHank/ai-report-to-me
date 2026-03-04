@@ -40,6 +40,9 @@
   },
   "files": [
     "dist",
+    ".claude-plugin",
+    "commands",
+    "hooks",
     "README.md",
     "LICENSE"
   ],
