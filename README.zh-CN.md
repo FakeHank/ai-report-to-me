@@ -19,6 +19,11 @@
 ## 功能特性
 
 - **每日报告** — 结构化总结今天做了什么、遇到了什么问题、学到了什么。包含"经验切片"：提炼出的问题解决故事，附带可迁移的认知。
+
+  | 飞书 | Slack |
+  |------|-------|
+  | <img src="docs/feishu-cn.png" width="400" /> | <img src="docs/slack-cn.png" width="400" /> |
+
 - **90 天 Wrapped** — 类 Spotify Wrapped 的阶段性回顾，含 session 统计、小时级活跃热力图、Top 项目排行、"Vibe Coder"人格分类（如 *深夜幽灵型*、*闪现游击型*、*重构上瘾型*）。
 - **摩擦检测** — 自动识别 session 中的重试循环、错误连锁和方向反复横跳。
 - **启动提醒** — Claude Code 的 SessionStart hook 自动提示生成昨日报告。OpenCode 通过自定义 `ai_report_check` tool 在聊天中手动查看。

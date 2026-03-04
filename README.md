@@ -19,6 +19,11 @@ It works with **Claude Code**, **Gemini CLI**, **OpenCode**, and **Codex**. All 
 ## Features
 
 - **Daily Reports** — Structured summaries of what you built, what broke, and what you learned. Includes "Experience Slices": distilled problem-solving stories with transferable insights.
+
+  | Feishu | Slack |
+  |--------|-------|
+  | <img src="docs/feishu-en.png" width="400" /> | <img src="docs/slack-en.png" width="400" /> |
+
 - **90-Day Wrapped** — A Spotify Wrapped-style retrospective with session stats, hourly heatmaps, top projects, and a "Vibe Coder" personality classification (e.g. *Night Ghost*, *Flash Raider*, *Refactor Addict*).
 - **Friction Detection** — Automatically identifies retry loops, error cascades, and direction switches in your sessions.
 - **Startup Reminders** — Claude Code's SessionStart hook nudges you to generate yesterday's report. OpenCode gets a custom `ai_report_check` tool you can invoke in chat.

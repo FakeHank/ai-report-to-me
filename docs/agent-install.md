@@ -24,20 +24,18 @@ node --version
 
 The major version must be **>= 20**. If Node.js is not installed or the version is too old, tell the user to install Node.js 20+ before continuing, then stop.
 
-### Step 2 — Ask User Preferences
+### Step 2 — Ask User Preferences (Must Do)
 
 Ask the user for the following before proceeding:
 
 1. **Report language** — one of: `en` (English), `zh` (中文), `ja` (日本語), `ko` (한국어), `ru` (Русский). Default: `en`.
-2. **Webhook URLs** (optional) — the user may want reports delivered to one or more of these platforms. Ask if they want to configure any:
+2. **Webhook URLs** — the user may want reports delivered to one or more of these platforms. Ask if they want to configure any:
    - Slack (`--slack-url <url>`)
    - Discord (`--discord-url <url>`)
    - Feishu/Lark (`--feishu-url <url>`)
    - DingTalk (`--dingtalk-url <url>`)
    - WeCom (`--wecom-url <url>`)
    - Microsoft Teams (`--teams-url <url>`)
-
-If the user has no preference, use `en` and skip webhooks.
 
 ### Step 3 — Install the Package
 
