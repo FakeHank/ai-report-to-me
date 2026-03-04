@@ -35,18 +35,21 @@ curl -s https://raw.githubusercontent.com/FakeHank/ai-report-to-me/main/docs/age
 
 Agent 会读取安装指南，询问你的偏好（语言、Webhook），然后自动安装并配置。
 
-**或手动安装：**
+或手动安装：
 
 ```bash
+Install and configure ai-report-to-me by following the instructions here:
 curl -fsSL https://raw.githubusercontent.com/FakeHank/ai-report-to-me/main/scripts/install.sh | bash
 ```
 
-安装完成后，在 coding agent session 中使用 slash command：
+安装完成后，在 coding agent session 中使用命令：
 
-```
-/dayreport                # 生成日报
-/qtreport                 # 生成 90 天 Wrapped
-```
+| CLI 工具 | 日报 | 90 天 Wrapped |
+|---|---|---|
+| Claude Code | `/dayreport` | `/qtreport` |
+| Gemini CLI | `/dayreport` | `/qtreport` |
+| OpenCode | `/dayreport` | `/qtreport` |
+| Codex | `$dayreport` | `$qtreport` |
 
 ## 工作原理
 

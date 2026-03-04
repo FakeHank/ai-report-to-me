@@ -86,9 +86,15 @@ If `aireport status` shows issues, report them to the user.
 
 ### Step 6 — Done!
 
-Tell the user the installation is complete. Let them know they can now use these slash commands inside their coding agent:
+Tell the user the installation is complete, and **remind them to restart their coding CLI** (Claude Code, OpenCode, Gemini CLI, Codex) so the newly installed hooks and slash commands take effect.
 
-- **`/dayreport`** — Generate a daily report for today's coding sessions
-- **`/qtreport`** — Generate a Wrapped-style summary of the last 90 days
+After restarting, they can use these commands inside their coding agent:
+
+| CLI Tool | Daily Report | 90-Day Wrapped |
+|---|---|---|
+| Claude Code | `/dayreport` | `/qtreport` |
+| Gemini CLI | `/dayreport` | `/qtreport` |
+| OpenCode | `/dayreport` | `/qtreport` |
+| Codex | `$dayreport` | `$qtreport` |
 
 That's it. No further configuration is needed.

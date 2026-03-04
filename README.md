@@ -27,26 +27,31 @@ It works with **Claude Code**, **Gemini CLI**, **OpenCode**, and **Codex**. All 
 
 ## Quick Start
 
-**Recommended: paste this into your coding agent** (Claude Code, Gemini CLI, OpenCode, or Codex) and let it handle everything:
+**Highly Recommended: paste this into your coding agent** 
+
+(Claude Code, Gemini CLI, OpenCode, or Codex) and let it handle everything:
 
 ```
+Install and configure ai-report-to-me by following the instructions here:
 curl -s https://raw.githubusercontent.com/FakeHank/ai-report-to-me/main/docs/agent-install.md
 ```
 
 The agent will read the guide, ask for your preferences (language, webhooks), install the package, and configure hooks automatically.
 
-**Or install manually:**
+Or install manually:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/FakeHank/ai-report-to-me/main/scripts/install.sh | bash
 ```
 
-Once installed, use the built-in slash commands directly in your coding agent session:
+Once installed, use the built-in commands directly in your coding agent session:
 
-```
-/dayreport                # generate daily report
-/qtreport                 # generate 90-day Wrapped
-```
+| CLI Tool | Daily Report | 90-Day Wrapped |
+|---|---|---|
+| Claude Code | `/dayreport` | `/qtreport` |
+| Gemini CLI | `/dayreport` | `/qtreport` |
+| OpenCode | `/dayreport` | `/qtreport` |
+| Codex | `$dayreport` | `$qtreport` |
 
 ## How It Works
 
