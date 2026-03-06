@@ -3,6 +3,7 @@ import type { HabitsAnalysis } from '../analyzer/habits.js'
 import type { VibeSignals } from '../analyzer/vibe-coder-type.js'
 import type { Improvement } from '../analyzer/improvements.js'
 import type { DailySlice } from '../daily-slices-extractor.js'
+import type { ImprovementSignals } from '../analyzer/improvement-signals.js'
 import { t, tf } from '../../shared/i18n.js'
 
 export function buildWrappedReportPrompt(
@@ -12,7 +13,8 @@ export function buildWrappedReportPrompt(
   improvements: Improvement[],
   lang: string,
   dailySlices?: DailySlice[],
-  semanticSummary?: SemanticSummary
+  semanticSummary?: SemanticSummary,
+  improvementSignals?: ImprovementSignals
 ): string {
   const langInstruction = lang === 'zh'
     ? '请用中文撰写报告。'
@@ -73,6 +75,7 @@ export function buildWrappedReportPrompt(
         debuggingStruggles: semanticSummary.debuggingStruggles,
       },
     } : {}),
+    ...(improvementSignals ? { improvementSignals } : {}),
   }, null, 2)
 
   return `You are generating a "Vibe Coding Wrapped" report — a comprehensive retrospective of the user's coding sessions over ${aggregation.days} days. ${langInstruction}
@@ -127,26 +130,37 @@ If \`semanticData\` is available, go beyond statistical indicators: use \`direct
 
 3-5 specific, data-backed suggestions. Each must have: observation with numbers → actionable suggestion.
 
-If \`semanticData.errorSamples\` and \`semanticData.debuggingStruggles\` are available, use them to give targeted improvement advice — reference real error messages and struggling files rather than generic patterns.
+Use \`improvementSignals\` to identify patterns (a value of -1 means insufficient data, skip it):
+- **Time patterns**: \`nightProductivityDrop\` (< 1 = less productive at night), \`sessionGapMedianMinutes\` / \`sessionGapStdDevMinutes\` (session rhythm), \`burstiness\` (high = feast-or-famine pattern)
+- **Work habits**: \`contextSwitchRate\` (high = frequently jumping between projects), \`abandonmentRate\` (high = many sessions started but dropped), \`reviewBeforeEndRate\` (low = not checking results), \`upfrontContextRate\` (low = not providing enough context upfront)
+- **Collaboration quality**: \`firstTrySuccessRate\` (low = AI frequently needs to redo edits), \`correctionToCompletionRatio\` (high = lots of corrections), \`explorationBeforeEditRatio\` (low = jumping to edits without understanding code first)
+
+Also use \`improvements\` (rule-based detections) and \`semanticData.errorSamples\` / \`semanticData.debuggingStruggles\` if available. Cross-reference signals to find the most impactful suggestions — e.g. low \`firstTrySuccessRate\` + low \`upfrontContextRate\` = "provide more context to get better first-try results".
 
 ### Section 6: Experience Accumulation
 
-You have access to all daily experience slices (dailyExperienceSlices) and friction records from this period.
+Mine insights from three data sources, in priority order:
+
+**Source A: Daily experience slices** (\`dailyExperienceSlices\`) — pre-refined by previous LLM passes, highest quality. Look for recurring patterns across days.
+
+**Source B: Resolved errors and friction** (\`frictionHotspots\` where resolved=true, \`semanticData.errorSamples.topResolved\`) — "problem → solution" arcs that represent hard-won lessons.
+
+**Source C: Successful complex sessions** — from \`semanticData.sessionSlices\`, find sessions where \`outcome\`="completed" with many \`userQueries\` (5+). Their query sequence reveals effective approaches to complex/ambiguous tasks — e.g. "first did X, then Y, then Z" process knowledge. These are NOT errors or friction — they are reusable playbooks.
 
 Your task:
-1. From all daily experience slices, identify **recurring patterns** — similar problems appearing 2+ times, and synthesize them into systematic insights
-2. From friction records, identify the **most valuable lessons** — not every friction is worth writing up, only those with cognitive value
-3. Elevate scattered experience slices into **transferable universal principles**
+1. From Source A, identify **recurring patterns** — similar insights appearing 2+ times across days
+2. From Source B, identify the **most valuable lessons** — only those with cognitive value, not every error
+3. From Source C, identify **effective approaches** — sessions where a good sequence of steps led to success on a complex task. Distill the approach into a reusable principle.
 
 Format for each insight:
 ### [Universal principle title]
-- **Frequency**：Appeared M times across N days (or which projects were affected)
-- **Typical Scenario**：The most representative instance
-- **General Principle**：The transferable insight abstracted from specific experiences
-- **Actionable Advice**：Concrete action for next time a similar situation arises
-- **Source**：session IDs [...] (use the sessionIds from the dailyExperienceSlices entries that contributed to this insight)
+- **Frequency**: Appeared M times across N days (or which projects were affected)
+- **Typical Scenario**: The most representative instance
+- **General Principle**: The transferable insight abstracted from specific experiences
+- **Actionable Advice**: Concrete action for next time a similar situation arises
+- **Source**: session IDs [...] (from dailyExperienceSlices sessionIds or semanticData sessionIds)
 
-Write at most 5 insights. Quality over quantity — if there aren't enough meaningful patterns, write fewer.
+Write at most 5 insights. Quality over quantity — if there aren't enough meaningful patterns, write fewer. Aim for a mix of failure-driven and success-driven insights, not just "things that went wrong".
 
 ### Section 7: What Kind of Vibe Coder Are You?
 

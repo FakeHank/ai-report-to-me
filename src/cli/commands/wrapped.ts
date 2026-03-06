@@ -10,7 +10,7 @@ import { Aggregator } from '../../core/aggregator.js'
 import { analyzeHabits } from '../../core/analyzer/habits.js'
 import { extractVibeSignals } from '../../core/analyzer/vibe-coder-type.js'
 import { generateImprovements } from '../../core/analyzer/improvements.js'
-import { detectFriction } from '../../core/analyzer/friction.js'
+import { extractImprovementSignals } from '../../core/analyzer/improvement-signals.js'
 import { aggregateSemantics } from '../../core/analyzer/semantic-aggregator.js'
 import { buildWrappedReportPrompt } from '../../core/prompts/wrapped-report.js'
 import { extractExperienceSlicesFromReports } from '../../core/daily-slices-extractor.js'
@@ -20,8 +20,6 @@ import { resolveWebhookOutputs } from '../../output/webhook/index.js'
 import { generateVibeCardPng } from '../../renderer/image/vibe-card.js'
 import { REPORTS_DIR, WRAPPED_DIR } from '../../shared/constants.js'
 import { ensureDir } from '../../shared/storage.js'
-import type { FrictionRecord } from '../../shared/types.js'
-
 export const wrappedCommand = new Command('wrapped')
   .description('Generate a Vibe Coding Wrapped report')
   .option('--days <number>', 'Number of days to analyze', '90')
@@ -56,12 +54,10 @@ export const wrappedCommand = new Command('wrapped')
     const aggregation = aggregator.aggregateWrapped(sessions, days)
     const habits = analyzeHabits(sessions, config.output_lang)
     const vibeSignals = extractVibeSignals(sessions)
-    const allFrictions: FrictionRecord[] = []
-    for (const s of sessions) {
-      allFrictions.push(...detectFriction(s))
-    }
+    const allFrictions = aggregation.frictionHotspots
     const improvements = generateImprovements(sessions, allFrictions, config.output_lang)
 
+    const improvementSignals = extractImprovementSignals(sessions)
     const semanticSummary = aggregateSemantics(sessions)
 
     if (opts.dryRun) {
@@ -78,6 +74,7 @@ export const wrappedCommand = new Command('wrapped')
         habits,
         improvements,
         frictionCount: allFrictions.length,
+        improvementSignals,
         semanticSummary,
       }, null, 2))
       return
@@ -89,7 +86,7 @@ export const wrappedCommand = new Command('wrapped')
       aggregation.endDate
     )
 
-    const prompt = buildWrappedReportPrompt(aggregation, habits, vibeSignals, improvements, config.output_lang, dailySlices, semanticSummary)
+    const prompt = buildWrappedReportPrompt(aggregation, habits, vibeSignals, improvements, config.output_lang, dailySlices, semanticSummary, improvementSignals)
 
     if (opts.promptOnly) {
       // Clean output for slash command consumption
@@ -128,8 +125,7 @@ export const saveWrappedCommand = new Command('save-wrapped')
       content = Buffer.concat(chunks).toString('utf-8')
     }
 
-    const sessionIds = opts.sessionIds ? opts.sessionIds.split(',') : []
-    const markdown = renderWrappedMarkdown(content, startDate, endDate, sessionIds)
+    const markdown = renderWrappedMarkdown(content)
 
     const output = new LocalFileOutput()
     const fileName = `${opts.period}.md`

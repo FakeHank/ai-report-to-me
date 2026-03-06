@@ -39,9 +39,20 @@ export function extractExperienceSlicesFromReports(
   return slices
 }
 
+const SLICE_HEADINGS = [
+  '## 经验切片',       // zh
+  '## Experience Slices', // en
+  '## 経験スライス',     // ja
+  '## 경험 슬라이스', // ko
+  '## Срезы опыта',    // ru
+]
+
 function extractSliceSection(markdown: string): string | null {
-  // Find "## 经验切片" section and extract until next "##"
-  const sliceStart = markdown.indexOf('## 经验切片')
+  let sliceStart = -1
+  for (const heading of SLICE_HEADINGS) {
+    sliceStart = markdown.indexOf(heading)
+    if (sliceStart !== -1) break
+  }
   if (sliceStart === -1) return null
 
   // Find the next ## heading after the slice section
