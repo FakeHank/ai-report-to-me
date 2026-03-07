@@ -411,10 +411,17 @@ function buildCard(options: VibeCardOptions): SatoriNode {
             gap: '8px',
           },
         },
+          h('div', {
+            style: {
+              display: 'flex',
+              fontSize: '13px',
+              color: '#64748B',
+            },
+          }, t('vibeCard.generateMine', lang)),
           h('img', {
             src: GITHUB_ICON_URI,
-            width: 20,
-            height: 20,
+            width: 18,
+            height: 18,
             style: { display: 'flex' },
           }),
           h('div', {

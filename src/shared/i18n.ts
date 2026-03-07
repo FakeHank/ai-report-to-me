@@ -357,6 +357,13 @@ const translations: Record<string, Record<Lang, string>> = {
     ko: 'AI가 당신에게 하고 싶은 말',
     ru: 'ЧТО ИИ ХОЧЕТ ВАМ СКАЗАТЬ',
   },
+  'vibeCard.generateMine': {
+    en: 'Generate mine:',
+    zh: '生成我的AI报告:',
+    ja: '自分のレポートを生成:',
+    ko: '내 리포트 생성:',
+    ru: 'Создать мой отчёт:',
+  },
 
   // Install wizard
   'install.noCliDetected': {

@@ -36,17 +36,12 @@ export function parseVibeFromMarkdown(markdown: string): VibeParseResult | null 
   let closingQuote: string | null = null
   let commentaryLines: string[] = []
   for (const line of afterTypeLines) {
-    // *"..."* format (English reports)
-    const quoteMatch1 = line.match(/^\s*\*"(.+?)"\*\s*$/)
-    if (quoteMatch1) {
-      closingQuote = quoteMatch1[1]
-      break
-    }
-    // > "..." format (Chinese reports, with optional trailing text)
-    const quoteMatch2 = line.match(/^\s*>\s*"(.+?)"/)
-    if (quoteMatch2) {
-      // Use the full line content after > as the quote
-      closingQuote = line.replace(/^\s*>\s*/, '').trim()
+    // Strip leading > and surrounding * / _ formatting to detect quotes
+    const stripped = line.replace(/^\s*>\s*/, '').replace(/^\*+|\*+$/g, '').trim()
+    // Match "..." or "…" (straight or curly quotes)
+    const quoteMatch = stripped.match(/^[""\u201C](.+?)[""\u201D]\s*$/)
+    if (quoteMatch) {
+      closingQuote = quoteMatch[1]
       break
     }
     commentaryLines.push(line)
