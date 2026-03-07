@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, openSync, readSync, closeSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CLIAdapter, DetectResult, SessionFilter, SessionMeta } from '../adapter.interface.js'
 import type { NormalizedSession } from '../../shared/types.js'
@@ -98,21 +98,31 @@ function scanSessionDir(dir: string, filter: SessionFilter | undefined, sessions
 }
 
 /**
- * Read the first line of a Codex JSONL file to extract cwd from session_meta event.
+ * Read only the first line of a Codex JSONL file to extract cwd from session_meta event.
+ * Uses a small fixed buffer instead of reading the entire file.
  */
 function extractCwdFromFirstLine(filePath: string): { cwd: string; projectName: string } {
   try {
-    const content = readFileSync(filePath, 'utf-8')
-    const firstNewline = content.indexOf('\n')
-    const firstLine = firstNewline === -1 ? content : content.slice(0, firstNewline)
-    if (!firstLine.trim()) return { cwd: '', projectName: 'unknown' }
+    const fd = openSync(filePath, 'r')
+    try {
+      const buf = Buffer.alloc(4096)
+      const bytesRead = readSync(fd, buf, 0, 4096, 0)
+      if (bytesRead === 0) return { cwd: '', projectName: 'unknown' }
 
-    const event = JSON.parse(firstLine) as { type?: string; payload?: { cwd?: string } }
-    if (event.type === 'session_meta' && event.payload?.cwd) {
-      const cwd = event.payload.cwd
-      const parts = cwd.split('/')
-      const name = parts[parts.length - 1] || parts[parts.length - 2] || 'unknown'
-      return { cwd, projectName: name }
+      const chunk = buf.toString('utf-8', 0, bytesRead)
+      const newlineIdx = chunk.indexOf('\n')
+      const firstLine = newlineIdx === -1 ? chunk : chunk.slice(0, newlineIdx)
+      if (!firstLine.trim()) return { cwd: '', projectName: 'unknown' }
+
+      const event = JSON.parse(firstLine) as { type?: string; payload?: { cwd?: string } }
+      if (event.type === 'session_meta' && event.payload?.cwd) {
+        const cwd = event.payload.cwd
+        const parts = cwd.split('/')
+        const name = parts[parts.length - 1] || parts[parts.length - 2] || 'unknown'
+        return { cwd, projectName: name }
+      }
+    } finally {
+      closeSync(fd)
     }
   } catch {
     // ignore parse errors

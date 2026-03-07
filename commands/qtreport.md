@@ -16,14 +16,14 @@ aireport wrapped --days 90 --prompt-only
 3. Follow the system prompt instructions to generate the complete Wrapped report with all 8 sections.
 
 4. After generating the report, save it by piping the content through `save-wrapped`:
-   - Extract the `SAVE_PERIOD` value (e.g. `2026-01-01_2026-03-31`) and `SESSION_IDS`
+   - Extract the `SAVE_PERIOD` value (e.g. `2026-01-01_2026-03-31`), `SESSION_IDS`, and `STATS`
    - Run:
 
 ```
-aireport save-wrapped --period {SAVE_PERIOD} --session-ids {SESSION_IDS} --content -
+aireport save-wrapped --period {SAVE_PERIOD} --session-ids {SESSION_IDS} --stats {STATS} --content -
 ```
 
-   Pass the full report markdown via stdin (pipe or heredoc). This command saves the report, generates the vibe card PNG, **and** pushes to any configured webhooks.
+   Pass the full report markdown via stdin (pipe or heredoc). The `--stats` flag passes pre-computed stats so the card generator doesn't need to re-read all sessions. This command saves the report, generates the vibe card PNG, **and** pushes to any configured webhooks.
 
    **Do NOT write directly to ~/.ai-report/wrapped/ — always use save-wrapped so webhooks are triggered.**
 

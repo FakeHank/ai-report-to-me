@@ -21,7 +21,7 @@ export const GEMINI_COMMANDS_DIR = join(GEMINI_DIR, 'commands')
 export const CODEX_DIR = join(HOME_DIR, '.codex')
 export const CODEX_SESSIONS_DIR = join(CODEX_DIR, 'sessions')
 export const CODEX_HISTORY_PATH = join(CODEX_DIR, 'history.jsonl')
-export const CODEX_SKILL_DIR = join(CODEX_DIR, 'skills', 'ai-report')
+export const CODEX_AGENTS_SKILLS_DIR = join(HOME_DIR, '.agents', 'skills')
 
 export const OPENCODE_DIR = join(HOME_DIR, '.local', 'share', 'opencode')
 export const OPENCODE_COMMANDS_DIR = join(HOME_DIR, '.config', 'opencode', 'commands')

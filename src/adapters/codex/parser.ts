@@ -39,6 +39,16 @@ interface TurnContextPayload {
   model: string
 }
 
+interface TokenUsage {
+  input_tokens: number
+  cached_input_tokens: number
+  output_tokens: number
+}
+
+interface TokenCountInfo {
+  total_token_usage: TokenUsage
+}
+
 export function parseCodexSession(filePath: string, projectPath: string): NormalizedSession {
   const content = readFileSync(filePath, 'utf-8').trim()
   if (!content) return emptySession(filePath, projectPath)
@@ -65,6 +75,9 @@ export function parseCodexSession(filePath: string, projectPath: string): Normal
   // Extract model from turn_context events
   const turnContext = events.find((e) => e.type === 'turn_context')
   const model = (turnContext?.payload as TurnContextPayload | undefined)?.model
+
+  // Extract token usage from the last event_msg with token_count info
+  const tokenUsage = extractTokenUsage(events)
 
   // Collect function call outputs by call_id
   const callOutputs = new Map<string, { output: string }>()
@@ -106,10 +119,8 @@ export function parseCodexSession(filePath: string, projectPath: string): Normal
 
         const role = msg.role === 'assistant' ? 'assistant' : 'user'
 
-        // If we have pending tool calls, attach them to the previous assistant message
-        // or flush them
-        if (role === 'user' && currentToolCalls.length > 0) {
-          // Attach tool calls to last assistant message
+        // Flush pending tool calls to the last assistant message before adding a new message
+        if (currentToolCalls.length > 0) {
           const lastAssistant = findLastAssistant(messages)
           if (lastAssistant) {
             lastAssistant.toolCalls = [...(lastAssistant.toolCalls || []), ...currentToolCalls]
@@ -133,7 +144,7 @@ export function parseCodexSession(filePath: string, projectPath: string): Normal
         }
 
         const output = callOutputs.get(fc.call_id)
-        const isError = output?.output?.startsWith('Exit code: 1') || output?.output?.includes('Error:') || false
+        const isError = detectError(output?.output)
 
         currentToolCalls.push({
           name: fc.name,
@@ -165,7 +176,7 @@ export function parseCodexSession(filePath: string, projectPath: string): Normal
   const endTime = new Date(Math.max(...timestamps))
   const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000)
 
-  const stats = computeStats(messages)
+  const stats = computeStats(messages, tokenUsage)
 
   return {
     sessionId,
@@ -179,6 +190,34 @@ export function parseCodexSession(filePath: string, projectPath: string): Normal
     messages,
     stats,
   }
+}
+
+/**
+ * Detect errors from function call output using exit code, not string matching.
+ */
+function detectError(output: string | undefined): boolean {
+  if (!output) return false
+  // Codex shell_command outputs start with "Exit code: N" on error
+  const exitMatch = output.match(/^Exit code: (\d+)/)
+  if (exitMatch) return exitMatch[1] !== '0'
+  // Also check for explicit error prefixes from Codex sandbox
+  if (output.startsWith('Error:') || output.startsWith('ENOENT:') || output.startsWith('EACCES:')) return true
+  return false
+}
+
+/**
+ * Extract cumulative token usage from the last event_msg with token_count info.
+ */
+function extractTokenUsage(events: RawEvent[]): TokenUsage | null {
+  let lastUsage: TokenUsage | null = null
+  for (const event of events) {
+    if (event.type !== 'event_msg') continue
+    const payload = event.payload as { type?: string; info?: TokenCountInfo | null }
+    if (payload.type === 'token_count' && payload.info?.total_token_usage) {
+      lastUsage = payload.info.total_token_usage
+    }
+  }
+  return lastUsage
 }
 
 function findLastAssistant(messages: NormalizedMessage[]): NormalizedMessage | undefined {
@@ -196,7 +235,7 @@ export function extractSessionId(filePath: string): string {
   return match ? match[1] : name
 }
 
-function computeStats(messages: NormalizedMessage[]): SessionStats {
+function computeStats(messages: NormalizedMessage[], tokenUsage: TokenUsage | null): SessionStats {
   const toolCallsByName: Record<string, number> = {}
   const filesTouchedSet = new Set<string>()
   let toolCallCount = 0
@@ -210,19 +249,17 @@ function computeStats(messages: NormalizedMessage[]): SessionStats {
         toolCallsByName[tc.name] = (toolCallsByName[tc.name] || 0) + 1
         if (tc.isError) errorCount++
 
-        // Extract files from tool calls
-        if (tc.name === 'apply_patch' || tc.name === 'write_file') {
-          editCount++
-          const filePath = (tc.input.file_path || tc.input.path) as string | undefined
-          if (filePath) filesTouchedSet.add(filePath)
+        if (tc.name === 'shell_command' || tc.name === 'shell') {
+          const cmd = (tc.input.command || '') as string
+          extractFilesFromShellCommand(cmd, filesTouchedSet)
+          if (isEditCommand(cmd)) editCount++
         } else if (tc.name === 'read_file') {
           const filePath = (tc.input.file_path || tc.input.path) as string | undefined
           if (filePath) filesTouchedSet.add(filePath)
-        } else if (tc.name === 'shell_command' || tc.name === 'shell') {
-          // Try to extract file references from shell commands
-          const cmd = (tc.input.command || '') as string
-          const fileMatch = cmd.match(/(?:cat|less|head|tail|vim|nano|code)\s+["']?([^\s"']+)/)
-          if (fileMatch) filesTouchedSet.add(fileMatch[1])
+        } else if (tc.name === 'write_file') {
+          editCount++
+          const filePath = (tc.input.file_path || tc.input.path) as string | undefined
+          if (filePath) filesTouchedSet.add(filePath)
         }
       }
     }
@@ -232,15 +269,52 @@ function computeStats(messages: NormalizedMessage[]): SessionStats {
     messageCount: messages.length,
     userMessageCount: messages.filter((m) => m.role === 'user').length,
     assistantMessageCount: messages.filter((m) => m.role === 'assistant').length,
-    totalInputTokens: 0,
-    totalOutputTokens: 0,
-    totalCacheTokens: 0,
+    totalInputTokens: tokenUsage?.input_tokens || 0,
+    totalOutputTokens: tokenUsage?.output_tokens || 0,
+    totalCacheTokens: tokenUsage?.cached_input_tokens || 0,
     toolCallCount,
     toolCallsByName,
     filesTouched: [...filesTouchedSet],
     editCount,
     errorCount,
   }
+}
+
+/**
+ * Extract file paths from shell commands. Codex primarily uses shell_command
+ * with patterns like `cat <<'EOF' > file`, `sed`, `echo >`, etc.
+ */
+function extractFilesFromShellCommand(cmd: string, files: Set<string>): void {
+  // cat <<'EOF' > /path/to/file or cat > /path/to/file
+  const catRedirect = cmd.match(/cat\s+(?:<<['"]?\w+['"]?\s+)?>\s*["']?([^\s"']+)/)
+  if (catRedirect) { files.add(catRedirect[1]); return }
+
+  // Direct redirect: > /path or >> /path
+  const redirect = cmd.match(/>\s*["']?([^\s"'>]+\.[\w]+)/)
+  if (redirect) { files.add(redirect[1]); return }
+
+  // Read commands: cat, less, head, tail, vim, nano, code
+  const readMatch = cmd.match(/(?:cat|less|head|tail|vim|nano|code|bat)\s+["']?([^\s"'|>]+\.[\w]+)/)
+  if (readMatch) files.add(readMatch[1])
+
+  // sed -i, patch
+  const sedMatch = cmd.match(/sed\s+-i['".]?\s+.*?["']?\s+["']?([^\s"']+\.[\w]+)/)
+  if (sedMatch) files.add(sedMatch[1])
+
+  // grep/rg with file path
+  const grepMatch = cmd.match(/(?:grep|rg)\s+.*?\s+["']?([^\s"'|>]+\.[\w]+)/)
+  if (grepMatch) files.add(grepMatch[1])
+}
+
+/**
+ * Detect if a shell command is a file-editing (write) operation.
+ */
+function isEditCommand(cmd: string): boolean {
+  return /cat\s+<</.test(cmd) ||
+    />\s*[^\s]/.test(cmd) ||
+    /sed\s+-i/.test(cmd) ||
+    /patch\s/.test(cmd) ||
+    /tee\s/.test(cmd)
 }
 
 function extractProjectName(projectPath: string): string {

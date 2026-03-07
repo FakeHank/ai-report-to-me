@@ -28,24 +28,3 @@ export function getQtreportContent(): string {
   return readFileSync(resolve(getCommandsDir(), 'qtreport.md'), 'utf-8')
 }
 
-export function getCodexSkillContent(): string {
-  return `---
-name: ai-report
-description: Generate daily coding reports or 90-day Vibe Coding Wrapped summaries from coding session data. Use when the user asks for $dayreport, $qtreport, daily report, or wrapped report.
----
-
-# AI Report — Daily & Wrapped Reports
-
-This skill provides two report commands for AI Report to Me.
-
-## $dayreport — Generate Daily Report
-
-${getDayreportContent()}
-
----
-
-## $qtreport — Generate 90-Day Wrapped Report
-
-${getQtreportContent()}
-`
-}

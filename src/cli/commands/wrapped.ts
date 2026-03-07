@@ -18,8 +18,10 @@ import { renderWrappedMarkdown } from '../../renderer/markdown/wrapped.js'
 import { LocalFileOutput } from '../../output/local-file.js'
 import { resolveWebhookOutputs } from '../../output/webhook/index.js'
 import { generateVibeCardPng } from '../../renderer/image/vibe-card.js'
+import { parseVibeFromMarkdown } from '../../shared/vibe-parser.js'
 import { REPORTS_DIR, WRAPPED_DIR } from '../../shared/constants.js'
 import { ensureDir } from '../../shared/storage.js'
+
 export const wrappedCommand = new Command('wrapped')
   .description('Generate a Vibe Coding Wrapped report')
   .option('--days <number>', 'Number of days to analyze', '90')
@@ -88,11 +90,22 @@ export const wrappedCommand = new Command('wrapped')
 
     const prompt = buildWrappedReportPrompt(aggregation, habits, vibeSignals, improvements, config.output_lang, dailySlices, semanticSummary, improvementSignals)
 
+    // Pre-computed stats for save-wrapped (avoids re-reading all sessions)
+    const topProject = aggregation.projectBreakdown[0]?.project || 'N/A'
+    const statsLine = [
+      aggregation.totalSessions,
+      Math.round(aggregation.totalDurationMinutes / 60),
+      aggregation.activeDays,
+      topProject,
+      aggregation.totalInputTokens + aggregation.totalOutputTokens,
+    ].join(',')
+
     if (opts.promptOnly) {
       // Clean output for slash command consumption
       console.log(prompt)
       console.log(`\n---\nSAVE_PERIOD=${aggregation.startDate}_${aggregation.endDate}`)
       console.log(`SESSION_IDS=${sessions.map(s => s.sessionId).join(',')}`)
+      console.log(`STATS=${statsLine}`)
     } else {
       console.log('\n' + '='.repeat(60))
       console.log('WRAPPED REPORT PROMPT')
@@ -109,7 +122,8 @@ export const saveWrappedCommand = new Command('save-wrapped')
   .requiredOption('--period <period>', 'Report period (YYYY-MM-DD_YYYY-MM-DD)')
   .requiredOption('--content <content>', 'Report markdown content (or - for stdin)')
   .option('--session-ids <ids>', 'Comma-separated session IDs')
-  .action(async (opts: { period: string; content: string; sessionIds?: string }) => {
+  .option('--stats <stats>', 'Pre-computed stats: sessions,hours,activeDays,topProject,totalTokens')
+  .action(async (opts: { period: string; content: string; sessionIds?: string; stats?: string }) => {
     const [startDate, endDate] = opts.period.split('_')
     if (!startDate || !endDate) {
       logger.error('Invalid period format. Expected: YYYY-MM-DD_YYYY-MM-DD')
@@ -137,32 +151,50 @@ export const saveWrappedCommand = new Command('save-wrapped')
 
     logger.success(`Wrapped report saved to ~/.ai-report/wrapped/${fileName}`)
 
-    // Try to generate vibe card PNG
+    // Generate vibe card PNG
     const config = loadConfig()
     try {
-      const vibeInfo = parseVibeType(content)
+      const vibeInfo = parseVibeFromMarkdown(content)
       if (vibeInfo) {
-        const registry = getRegistry()
-        const adapters = await registry.getConfiguredAdapters(config.sources)
-        const days = dayjs(endDate).diff(dayjs(startDate), 'day') + 1
-        const since = dayjs(startDate).startOf('day').toDate()
-        const reader = new SessionReader(adapters)
-        const sessions = await reader.readSessions({ since })
-        const aggregator = new Aggregator()
-        const aggregation = aggregator.aggregateWrapped(sessions, days)
-        const topProject = aggregation.projectBreakdown[0]?.project || 'N/A'
+        let cardStats: { totalSessions: number; totalHours: number; activeDays: number; topProject: string; totalTokens: number }
 
-        const pngBuffer = await generateVibeCardPng({
-          emoji: vibeInfo.emoji,
-          label: vibeInfo.label,
-          reason: vibeInfo.reason,
-          periodLabel: `${startDate} — ${endDate}`,
-          stats: {
+        if (opts.stats) {
+          // Use pre-computed stats (fast path)
+          const parts = opts.stats.split(',')
+          cardStats = {
+            totalSessions: parseInt(parts[0]) || 0,
+            totalHours: parseInt(parts[1]) || 0,
+            activeDays: parseInt(parts[2]) || 0,
+            topProject: parts[3] || 'N/A',
+            totalTokens: parseInt(parts[4]) || 0,
+          }
+        } else {
+          // Fallback: re-read sessions (for manual invocation without --stats)
+          logger.info('No --stats provided, re-reading sessions for card stats...')
+          const registry = getRegistry()
+          const adapters = await registry.getConfiguredAdapters(config.sources)
+          const days = dayjs(endDate).diff(dayjs(startDate), 'day') + 1
+          const since = dayjs(startDate).startOf('day').toDate()
+          const reader = new SessionReader(adapters)
+          const sessions = await reader.readSessions({ since })
+          const aggregator = new Aggregator()
+          const aggregation = aggregator.aggregateWrapped(sessions, days)
+          cardStats = {
             totalSessions: aggregation.totalSessions,
             totalHours: Math.round(aggregation.totalDurationMinutes / 60),
             activeDays: aggregation.activeDays,
-            topProject,
-          },
+            topProject: aggregation.projectBreakdown[0]?.project || 'N/A',
+            totalTokens: aggregation.totalInputTokens + aggregation.totalOutputTokens,
+          }
+        }
+
+        const pngBuffer = await generateVibeCardPng({
+          emoji: vibeInfo.emoji,
+          typeName: vibeInfo.typeName,
+          periodLabel: `${startDate} — ${endDate}`,
+          stats: cardStats,
+          commentary: vibeInfo.commentary || undefined,
+          closingQuote: vibeInfo.closingQuote || undefined,
           lang: config.output_lang,
         })
 
@@ -188,13 +220,3 @@ export const saveWrappedCommand = new Command('save-wrapped')
       }
     }
   })
-
-function parseVibeType(markdown: string): { emoji: string; label: string; reason: string } | null {
-  const match = markdown.match(/\*\*\s*([\p{Emoji_Presentation}\p{Extended_Pictographic}])\s*(.+?)\s*\*\*/u)
-  if (!match) return null
-  return {
-    emoji: match[1],
-    label: `${match[1]} ${match[2]}`,
-    reason: match[2],
-  }
-}

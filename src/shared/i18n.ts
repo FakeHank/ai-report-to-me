@@ -301,6 +301,20 @@ const translations: Record<string, Record<Lang, string>> = {
   },
 
   // Vibe card
+  'vibeCard.title': {
+    en: 'MY AI 90-DAY RECAP',
+    zh: '我的 AI 90 天回顾',
+    ja: 'AI 90日間のまとめ',
+    ko: 'AI 90일 리캡',
+    ru: 'МОЙ AI-ОТЧЁТ ЗА 90 ДНЕЙ',
+  },
+  'vibeCard.tokensConsumed': {
+    en: 'TOKENS CONSUMED',
+    zh: 'TOKENS 消耗',
+    ja: 'トークン消費',
+    ko: '토큰 소비',
+    ru: 'ТОКЕНОВ ИСПОЛЬЗОВАНО',
+  },
   'vibeCard.sessions': {
     en: 'sessions',
     zh: '个 session',
@@ -328,6 +342,20 @@ const translations: Record<string, Record<Lang, string>> = {
     ja: 'トッププロジェクト',
     ko: '탑 프로젝트',
     ru: 'топ-проект',
+  },
+  'vibeCard.vibeType': {
+    en: 'YOUR VIBE TYPE',
+    zh: '你的 VIBE 类型',
+    ja: 'あなたの VIBE タイプ',
+    ko: '당신의 VIBE 타입',
+    ru: 'ВАШ VIBE-ТИП',
+  },
+  'vibeCard.commentaryTitle': {
+    en: 'WHAT AI WANTS TO TELL YOU',
+    zh: 'AI 想对你说的话',
+    ja: 'AI があなたに伝えたいこと',
+    ko: 'AI가 당신에게 하고 싶은 말',
+    ru: 'ЧТО ИИ ХОЧЕТ ВАМ СКАЗАТЬ',
   },
 
   // Install wizard
