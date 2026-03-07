@@ -1,10 +1,22 @@
 import { readFileSync } from 'node:fs'
 import { basename } from 'node:path'
-import type { NormalizedSession, NormalizedMessage, ToolCall, SessionStats } from '../../shared/types.js'
+import type { NormalizedSession, NormalizedMessage, ToolCall, SessionStats, TokenUsage } from '../../shared/types.js'
+
+interface GeminiTokensSummary {
+  input?: number
+  output?: number
+  cached?: number
+  thoughts?: number
+  tool?: number
+  total?: number
+}
 
 interface GeminiMessage {
   role: string
   parts?: GeminiPart[]
+  type?: string
+  tokens?: GeminiTokensSummary | null
+  model?: string
 }
 
 interface GeminiPart {
@@ -48,7 +60,8 @@ export function parseGeminiSession(filePath: string, projectPath: string): Norma
   const messages: NormalizedMessage[] = []
 
   for (const msg of rawMessages) {
-    const role = msg.role === 'model' || msg.role === 'gemini' ? 'assistant' : 'user'
+    const isAssistant = msg.role === 'model' || msg.role === 'gemini' || msg.type === 'gemini'
+    const role = isAssistant ? 'assistant' : 'user'
     const textParts: string[] = []
     const toolCalls: ToolCall[] = []
 
@@ -76,12 +89,23 @@ export function parseGeminiSession(filePath: string, projectPath: string): Norma
     const content = textParts.join('\n').trim()
     if (!content && toolCalls.length === 0) continue
 
+    // Extract token usage from gemini messages (written by chatRecordingService)
+    let usage: TokenUsage | undefined
+    if (isAssistant && msg.tokens) {
+      usage = {
+        inputTokens: msg.tokens.input || 0,
+        outputTokens: msg.tokens.output || 0,
+        cacheReadTokens: msg.tokens.cached || 0,
+      }
+    }
+
     messages.push({
       role,
       timestamp: new Date(), // Gemini CLI sessions don't have per-message timestamps
       content: content.slice(0, 5000),
-      model: sessionData.model,
+      model: msg.model || sessionData.model,
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+      usage,
     })
   }
 
@@ -111,8 +135,17 @@ function computeStats(messages: NormalizedMessage[]): SessionStats {
   let toolCallCount = 0
   let editCount = 0
   let errorCount = 0
+  let totalInputTokens = 0
+  let totalOutputTokens = 0
+  let totalCacheTokens = 0
 
   for (const msg of messages) {
+    if (msg.usage) {
+      totalInputTokens += msg.usage.inputTokens
+      totalOutputTokens += msg.usage.outputTokens
+      totalCacheTokens += msg.usage.cacheReadTokens || 0
+    }
+
     if (msg.toolCalls) {
       for (const tc of msg.toolCalls) {
         toolCallCount++
@@ -135,9 +168,9 @@ function computeStats(messages: NormalizedMessage[]): SessionStats {
     messageCount: messages.length,
     userMessageCount: messages.filter((m) => m.role === 'user').length,
     assistantMessageCount: messages.filter((m) => m.role === 'assistant').length,
-    totalInputTokens: 0,
-    totalOutputTokens: 0,
-    totalCacheTokens: 0,
+    totalInputTokens,
+    totalOutputTokens,
+    totalCacheTokens,
     toolCallCount,
     toolCallsByName,
     filesTouched: [...filesTouchedSet],

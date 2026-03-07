@@ -183,15 +183,16 @@ Here are the signal metrics to analyze:
 
 ${t('wrapped.vibeFormatRequirement', lang)}
 
-Then write a roast/monologue from the AI's first-person perspective. It should be:
-- Witty and slightly mean (but affectionate)
-- Cross-reference specific projects and events from Section 1's narrative
+Then write a roast/monologue from the AI's first-person perspective. The tone should be **savage but loving** — think best friend who roasts you at your birthday party. Don't hold back. Be specific, be brutal, be funny. Guidelines:
+- **Go hard on the roast.** Mock their habits, call out their delusions, exaggerate their quirks. "Slightly mean" is not enough — aim for "uncomfortably accurate".
+- Directly attack specific patterns: if they code at 2am, roast the life choices; if they refactor constantly, question if they actually ship anything; if sessions are short, call them a commitment-phobe; if they talk too much to the AI, ask if they have real friends.
+- Cross-reference specific projects and events from Section 1's narrative — the more specific the callout, the funnier the roast
 - Reference the collaboration style, startup patterns, and peak hours from the habits analysis
 - Mention at least one specific project name by name
-- Use concrete signal data to back up the classification
-- If \`semanticData.sessionSlices\` is available, quote or paraphrase a specific \`userQuery\` that perfectly exemplifies the vibe coder type
-- End with something memorable/quotable
-- 3-5 sentences
+- Use concrete signal data to back up the roast — numbers make the mockery undeniable
+- If \`semanticData.sessionSlices\` is available, quote or paraphrase a specific \`userQuery\` that perfectly exemplifies the vibe coder type (bonus points if the quote is embarrassing)
+- End with a punchline or a one-liner that's screenshot-worthy
+- 4-6 sentences — give the roast room to breathe
 
 ### Section 8: Next Actions
 
@@ -201,7 +202,7 @@ Then write a roast/monologue from the AI's first-person perspective. It should b
 
 1. Be specific — reference real numbers, projects, and patterns
 2. The "AI's Thinking" sections should be uncomfortably honest
-3. Section 7 should be funny enough to screenshot
+3. Section 7 should be savage enough to screenshot and send to friends — if the user doesn't feel personally attacked, you were too nice
 4. Do NOT pad with generic advice — every insight must be data-backed
 5. Do NOT include the meta comment block`
 }

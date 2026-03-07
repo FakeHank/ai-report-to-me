@@ -2,6 +2,7 @@ import { Command } from 'commander'
 import dayjs from 'dayjs'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { loadConfig } from '../../shared/config.js'
 import { logger } from '../../shared/logger.js'
 import { getRegistry } from '../../adapters/registry.js'
@@ -101,11 +102,18 @@ export const wrappedCommand = new Command('wrapped')
     ].join(',')
 
     if (opts.promptOnly) {
-      // Clean output for slash command consumption
+      // Write metadata to a separate temp file so the agent doesn't need to parse it from the huge prompt output
+      const meta = {
+        savePeriod: `${aggregation.startDate}_${aggregation.endDate}`,
+        sessionIds: sessions.map(s => s.sessionId).join(','),
+        stats: statsLine,
+      }
+      const metaPath = join(tmpdir(), 'aireport-wrapped-meta.json')
+      writeFileSync(metaPath, JSON.stringify(meta, null, 2))
+
+      // Output prompt only (no metadata mixed in)
       console.log(prompt)
-      console.log(`\n---\nSAVE_PERIOD=${aggregation.startDate}_${aggregation.endDate}`)
-      console.log(`SESSION_IDS=${sessions.map(s => s.sessionId).join(',')}`)
-      console.log(`STATS=${statsLine}`)
+      console.log(`\n---\nMetadata written to: ${metaPath}`)
     } else {
       console.log('\n' + '='.repeat(60))
       console.log('WRAPPED REPORT PROMPT')
@@ -120,7 +128,7 @@ export const wrappedCommand = new Command('wrapped')
 export const saveWrappedCommand = new Command('save-wrapped')
   .description('Save a generated wrapped report (internal use)')
   .requiredOption('--period <period>', 'Report period (YYYY-MM-DD_YYYY-MM-DD)')
-  .requiredOption('--content <content>', 'Report markdown content (or - for stdin)')
+  .requiredOption('--content <content>', 'Report markdown content (or - for stdin, or @filepath to read from file)')
   .option('--session-ids <ids>', 'Comma-separated session IDs')
   .option('--stats <stats>', 'Pre-computed stats: sessions,hours,activeDays,topProject,totalTokens')
   .action(async (opts: { period: string; content: string; sessionIds?: string; stats?: string }) => {
@@ -137,6 +145,9 @@ export const saveWrappedCommand = new Command('save-wrapped')
         chunks.push(chunk as Buffer)
       }
       content = Buffer.concat(chunks).toString('utf-8')
+    } else if (content.startsWith('@')) {
+      const { readFileSync } = await import('node:fs')
+      content = readFileSync(content.slice(1), 'utf-8')
     }
 
     const markdown = renderWrappedMarkdown(content)
