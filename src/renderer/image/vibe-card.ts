@@ -10,9 +10,9 @@ export interface VibeCardOptions {
   periodLabel: string
   stats: {
     totalSessions: number
-    totalHours: number
+    avgSessionMinutes: number
     activeDays: number
-    topProject: string
+    topCli: string
     totalTokens: number
   }
   commentary?: string
@@ -130,13 +130,11 @@ function buildCard(options: VibeCardOptions): SatoriNode {
   const { typeName, periodLabel, stats, commentary, closingQuote, lang = 'en' } = options
   const colorIndex = hashString(typeName) % COLOR_PALETTE.length
   const [color1, color2] = COLOR_PALETTE[colorIndex]
-  const topProject = stats.topProject.length > 14 ? stats.topProject.slice(0, 12) + '..' : stats.topProject
-
   const statItems = [
     { value: String(stats.totalSessions), label: t('vibeCard.sessions', lang) },
-    { value: `${stats.totalHours}h`, label: t('vibeCard.coding', lang) },
+    { value: `${stats.avgSessionMinutes}min`, label: t('vibeCard.avgSession', lang) },
     { value: String(stats.activeDays), label: t('vibeCard.activeDays', lang) },
-    { value: topProject, label: t('vibeCard.topProject', lang) },
+    { value: stats.topCli, label: t('vibeCard.topCli', lang) },
   ]
 
   const displayCommentary = commentary ? commentary : null
@@ -515,6 +513,7 @@ export async function generateVibeCardPng(options: VibeCardOptions): Promise<Buf
   height += 28   // gap to footer
   height += 2    // footer gradient line
   height += 18 + 14 + 20 // footer padding + text + bottom padding
+  height += 20   // safety buffer for rendering differences
 
   height = Math.max(height, 400)
 

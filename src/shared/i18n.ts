@@ -139,13 +139,6 @@ const translations: Record<string, Record<Lang, string>> = {
   },
 
   // Wrapped report template
-  'wrapped.tokenFootnote': {
-    en: '* Token usage data reflects only {source} — other CLIs do not provide token statistics.',
-    zh: '* Token 消耗数仅反映 {source} 的数据，其他 CLI 不提供 token 统计。',
-    ja: '* トークン消費データは {source} のみを反映しています。他のCLIはトークン統計を提供していません。',
-    ko: '* 토큰 소비 데이터는 {source}만 반영합니다. 다른 CLI는 토큰 통계를 제공하지 않습니다.',
-    ru: '* Данные о потреблении токенов отражают только {source} — другие CLI не предоставляют статистику токенов.',
-  },
   'wrapped.vibeExamples': {
     en: '"Night Ghost", "Flip-Flopper", "Flash Raider", "Wall Builder", "Chatterbox Driver", "Refactor Addict"',
     zh: '"深夜幽灵型"、"反复横跳型"、"闪现游击型"、"砌墙专家型"、"话痨驱动型"、"重构上瘾型"',
@@ -322,12 +315,12 @@ const translations: Record<string, Record<Lang, string>> = {
     ko: '세션',
     ru: 'сессий',
   },
-  'vibeCard.coding': {
-    en: 'coding',
-    zh: '编程',
-    ja: 'コーディング',
-    ko: '코딩',
-    ru: 'кодинг',
+  'vibeCard.avgSession': {
+    en: 'avg session',
+    zh: '平均时长',
+    ja: '平均セッション',
+    ko: '평균 세션',
+    ru: 'средн. сессия',
   },
   'vibeCard.activeDays': {
     en: 'active days',
@@ -336,12 +329,12 @@ const translations: Record<string, Record<Lang, string>> = {
     ko: '활동일',
     ru: 'активных дней',
   },
-  'vibeCard.topProject': {
-    en: 'top project',
-    zh: '主力项目',
-    ja: 'トッププロジェクト',
-    ko: '탑 프로젝트',
-    ru: 'топ-проект',
+  'vibeCard.topCli': {
+    en: 'top CLI',
+    zh: '主力 CLI',
+    ja: 'トップCLI',
+    ko: '탑 CLI',
+    ru: 'топ CLI',
   },
   'vibeCard.vibeType': {
     en: 'YOUR VIBE TYPE',

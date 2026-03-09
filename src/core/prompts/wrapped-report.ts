@@ -4,7 +4,7 @@ import type { VibeSignals } from '../analyzer/vibe-coder-type.js'
 import type { Improvement } from '../analyzer/improvements.js'
 import type { DailySlice } from '../daily-slices-extractor.js'
 import type { ImprovementSignals } from '../analyzer/improvement-signals.js'
-import { t, tf } from '../../shared/i18n.js'
+import { t } from '../../shared/i18n.js'
 
 export function buildWrappedReportPrompt(
   aggregation: WrappedAggregation,
@@ -26,19 +26,11 @@ export function buildWrappedReportPrompt(
     ? 'Напишите отчет на русском языке.'
     : 'Write the report in English.'
 
-  // Determine which CLIs provide token data
-  const cliNames = Object.keys(aggregation.cliDistribution) as (keyof typeof aggregation.cliDistribution)[]
-  const TOKEN_CAPABLE_CLIS = ['claude-code', 'opencode']
-  const tokenSource = cliNames.filter((cli) => TOKEN_CAPABLE_CLIS.includes(cli))
-  const hasNonTokenCli = cliNames.some((cli) => !TOKEN_CAPABLE_CLIS.includes(cli))
-
   const data = JSON.stringify({
     period: `${aggregation.startDate} to ${aggregation.endDate} (${aggregation.days} days)`,
     totalSessions: aggregation.totalSessions,
     totalMessages: aggregation.totalMessages,
     totalTokens: `~${Math.round((aggregation.totalInputTokens + aggregation.totalOutputTokens) / 1000)}K`,
-    tokenSource,
-    hasNonTokenCli,
     activeDays: aggregation.activeDays,
     totalHours: Math.round(aggregation.totalDurationMinutes / 60),
     averageSessionMinutes: aggregation.averageSessionMinutes,
@@ -108,8 +100,6 @@ Each paragraph should be 2-4 sentences. Mention specific projects, peak periods,
 ### Section 2: Key Metrics Dashboard
 
 A table with key metrics: total sessions, total messages, total tokens, average session duration, longest session, active days, top 3 tool calls, CLI distribution.
-
-If \`hasNonTokenCli\` is true, add a footnote below the table: "${tf('wrapped.tokenFootnote', lang, { source: tokenSource.length > 0 ? tokenSource.join(' / ') : 'N/A' })}"
 
 ### Section 3: Project Map
 

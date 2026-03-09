@@ -92,12 +92,13 @@ export const wrappedCommand = new Command('wrapped')
     const prompt = buildWrappedReportPrompt(aggregation, habits, vibeSignals, improvements, config.output_lang, dailySlices, semanticSummary, improvementSignals)
 
     // Pre-computed stats for save-wrapped (avoids re-reading all sessions)
-    const topProject = aggregation.projectBreakdown[0]?.project || 'N/A'
+    const cliEntries = Object.entries(aggregation.cliDistribution) as [string, number][]
+    const topCli = cliEntries.sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'
     const statsLine = [
       aggregation.totalSessions,
-      Math.round(aggregation.totalDurationMinutes / 60),
+      Math.round(aggregation.averageSessionMinutes),
       aggregation.activeDays,
-      topProject,
+      topCli,
       aggregation.totalInputTokens + aggregation.totalOutputTokens,
     ].join(',')
 
@@ -130,7 +131,7 @@ export const saveWrappedCommand = new Command('save-wrapped')
   .requiredOption('--period <period>', 'Report period (YYYY-MM-DD_YYYY-MM-DD)')
   .requiredOption('--content <content>', 'Report markdown content (or - for stdin, or @filepath to read from file)')
   .option('--session-ids <ids>', 'Comma-separated session IDs')
-  .option('--stats <stats>', 'Pre-computed stats: sessions,hours,activeDays,topProject,totalTokens')
+  .option('--stats <stats>', 'Pre-computed stats: sessions,avgMinutes,activeDays,topCli,totalTokens')
   .action(async (opts: { period: string; content: string; sessionIds?: string; stats?: string }) => {
     const [startDate, endDate] = opts.period.split('_')
     if (!startDate || !endDate) {
@@ -167,16 +168,16 @@ export const saveWrappedCommand = new Command('save-wrapped')
     try {
       const vibeInfo = parseVibeFromMarkdown(content)
       if (vibeInfo) {
-        let cardStats: { totalSessions: number; totalHours: number; activeDays: number; topProject: string; totalTokens: number }
+        let cardStats: { totalSessions: number; avgSessionMinutes: number; activeDays: number; topCli: string; totalTokens: number }
 
         if (opts.stats) {
           // Use pre-computed stats (fast path)
           const parts = opts.stats.split(',')
           cardStats = {
             totalSessions: parseInt(parts[0]) || 0,
-            totalHours: parseInt(parts[1]) || 0,
+            avgSessionMinutes: parseInt(parts[1]) || 0,
             activeDays: parseInt(parts[2]) || 0,
-            topProject: parts[3] || 'N/A',
+            topCli: parts[3] || 'N/A',
             totalTokens: parseInt(parts[4]) || 0,
           }
         } else {
@@ -190,11 +191,12 @@ export const saveWrappedCommand = new Command('save-wrapped')
           const sessions = await reader.readSessions({ since })
           const aggregator = new Aggregator()
           const aggregation = aggregator.aggregateWrapped(sessions, days)
+          const cliEntries = Object.entries(aggregation.cliDistribution) as [string, number][]
           cardStats = {
             totalSessions: aggregation.totalSessions,
-            totalHours: Math.round(aggregation.totalDurationMinutes / 60),
+            avgSessionMinutes: Math.round(aggregation.averageSessionMinutes),
             activeDays: aggregation.activeDays,
-            topProject: aggregation.projectBreakdown[0]?.project || 'N/A',
+            topCli: cliEntries.sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A',
             totalTokens: aggregation.totalInputTokens + aggregation.totalOutputTokens,
           }
         }

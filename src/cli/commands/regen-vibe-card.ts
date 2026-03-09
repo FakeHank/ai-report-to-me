@@ -57,7 +57,8 @@ export const regenVibeCardCommand = new Command('regen-vibe-card')
 
     const aggregator = new Aggregator()
     const aggregation = aggregator.aggregateWrapped(sessions, days)
-    const topProject = aggregation.projectBreakdown[0]?.project || 'N/A'
+    const cliEntries = Object.entries(aggregation.cliDistribution) as [string, number][]
+    const topCli = cliEntries.sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'
 
     const config = loadConfig()
     try {
@@ -67,9 +68,9 @@ export const regenVibeCardCommand = new Command('regen-vibe-card')
         periodLabel: `${aggregation.startDate} — ${aggregation.endDate}`,
         stats: {
           totalSessions: aggregation.totalSessions,
-          totalHours: Math.round(aggregation.totalDurationMinutes / 60),
+          avgSessionMinutes: Math.round(aggregation.averageSessionMinutes),
           activeDays: aggregation.activeDays,
-          topProject,
+          topCli,
           totalTokens: aggregation.totalInputTokens + aggregation.totalOutputTokens,
         },
         commentary: vibeInfo.commentary || undefined,
