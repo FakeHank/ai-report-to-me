@@ -25,6 +25,8 @@
   | <img src="docs/feishu-cn.png" width="400" /> | <img src="docs/slack-cn.png" width="400" /> |
 
 - **90 天 Wrapped** — 类 Spotify Wrapped 的阶段性回顾，含 session 统计、小时级活跃热力图、Top 项目排行、"Vibe Coder"人格分类（如 *深夜幽灵型*、*闪现游击型*、*重构上瘾型*）。
+
+  <img src="docs/qtreport-cn.png" width="600" />
 - **摩擦检测** — 自动识别 session 中的重试循环、错误连锁和方向反复横跳。
 - **启动提醒** — Claude Code 的 SessionStart hook 自动提示生成昨日报告。OpenCode 通过自定义 `ai_report_check` tool 在聊天中手动查看。
 - **Webhook 推送** — 报告推送到 Slack、Discord、飞书、钉钉、企业微信、Microsoft Teams。

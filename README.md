@@ -25,6 +25,8 @@ It works with **Claude Code**, **Gemini CLI**, **OpenCode**, and **Codex**. All 
   | <img src="docs/feishu-en.png" width="400" /> | <img src="docs/slack-en.png" width="400" /> |
 
 - **90-Day Wrapped** — A Spotify Wrapped-style retrospective with session stats, hourly heatmaps, top projects, and a "Vibe Coder" personality classification (e.g. *Night Ghost*, *Flash Raider*, *Refactor Addict*).
+
+  <img src="docs/qtreport-en.png" width="600" />
 - **Friction Detection** — Automatically identifies retry loops, error cascades, and direction switches in your sessions.
 - **Startup Reminders** — Claude Code's SessionStart hook nudges you to generate yesterday's report. OpenCode gets a custom `ai_report_check` tool you can invoke in chat.
 - **Webhook Push** — Send reports to Slack, Discord, Feishu, DingTalk, WeCom, or Microsoft Teams.

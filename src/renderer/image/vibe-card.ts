@@ -462,13 +462,22 @@ function loadFonts(): { name: string; data: Buffer; weight: number; style: strin
 
 /**
  * Estimate height needed to render the formatted commentary text.
+ * Splits by newlines first to handle multi-paragraph text correctly.
  */
 function estimateTextHeight(text: string, fontSize: number, lineHeight: number, contentWidth: number): number {
   const isCjk = hasCjkChars(text)
-  const avgCharWidth = isCjk ? (fontSize * 1.0) : (fontSize * 0.52)
+  const avgCharWidth = isCjk ? (fontSize * 1.0) : (fontSize * 0.48)
   const charsPerLine = Math.floor(contentWidth / avgCharWidth)
 
-  const totalLines = Math.max(1, Math.ceil(text.length / charsPerLine))
+  const paragraphs = text.split('\n')
+  let totalLines = 0
+  for (const para of paragraphs) {
+    if (para.trim() === '') {
+      totalLines += 1 // empty line between paragraphs
+    } else {
+      totalLines += Math.max(1, Math.ceil(para.length / charsPerLine))
+    }
+  }
   return Math.ceil(totalLines * lineHeight)
 }
 
@@ -513,7 +522,7 @@ export async function generateVibeCardPng(options: VibeCardOptions): Promise<Buf
   height += 28   // gap to footer
   height += 2    // footer gradient line
   height += 18 + 14 + 20 // footer padding + text + bottom padding
-  height += 20   // safety buffer for rendering differences
+  height += 40   // safety buffer for rendering differences
 
   height = Math.max(height, 400)
 
